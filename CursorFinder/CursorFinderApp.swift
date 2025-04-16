@@ -111,6 +111,7 @@ class ScreenManager: ObservableObject {
 class LaserViewModel: ObservableObject {
     @Published var mouseLocation: CGPoint = .zero
     @Published var isVisible: Bool = true
+    @Published var currentScreen: NSScreen?
 
     private var cancellables = Set<AnyCancellable>()
     private var mouseMoveMonitor: Any?
@@ -141,26 +142,39 @@ class LaserViewModel: ObservableObject {
 
             // マウスがあるスクリーンを特定
             if let screen = NSScreen.screens.first(where: { $0.frame.contains(globalLocation) }) {
-                // スクリーン座標系に変換
                 let screenLocation = CGPoint(
                     x: globalLocation.x - screen.frame.origin.x,
                     y: screen.frame.height - (globalLocation.y - screen.frame.origin.y)
                 )
 
-                DispatchQueue.main.async {
-                    self.updateMouseLocation(screenLocation)
+                // UIの更新はメインスレッドで行う
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { return }
+                    self.currentScreen = screen
+                    self.updateMouseLocationInternal(screenLocation)
                 }
             }
         }
 
-        isVisible = true
+        // UI更新はメインスレッドで行う
+        DispatchQueue.main.async { [weak self] in
+            self?.isVisible = true
+        }
     }
 
-    func updateMouseLocation(_ newLocation: CGPoint) {
+    // 内部での使用のみのメソッド
+    private func updateMouseLocationInternal(_ newLocation: CGPoint) {
         if mouseLocation != newLocation {
             mouseLocation = newLocation
             isVisible = true
             inactivitySubject.send()
+        }
+    }
+
+    // 外部から呼ばれる可能性のあるメソッド
+    func updateMouseLocation(_ newLocation: CGPoint) {
+        DispatchQueue.main.async { [weak self] in
+            self?.updateMouseLocationInternal(newLocation)
         }
     }
 
@@ -186,8 +200,8 @@ struct LaserOverlayView: View {
 
     var body: some View {
         ZStack {
-            if viewModel.isVisible {
-                LaserCanvasView(mouseLocation: viewModel.mouseLocation)
+            if viewModel.isVisible, let currentScreen = viewModel.currentScreen {
+                LaserCanvasView(viewModel: viewModel, screen: currentScreen)
             }
         }
         .ignoresSafeArea()
@@ -196,47 +210,76 @@ struct LaserOverlayView: View {
 }
 
 struct LaserCanvasView: View {
-    let mouseLocation: CGPoint
+    @ObservedObject var viewModel: LaserViewModel
+    let screen: NSScreen
 
     var body: some View {
         GeometryReader { geometry in
-            Canvas { context, size in
-                // ビューの四隅の座標（ローカル座標系）
-                let corners = [
-                    CGPoint(x: 0, y: 0),
-                    CGPoint(x: size.width, y: 0),
-                    CGPoint(x: 0, y: size.height),
-                    CGPoint(x: size.width, y: size.height)
-                ]
+            ZStack {
+                Color.clear // 透明な背景
 
-                // 各コーナーからマウス位置へのレーザー線を描画
-                for corner in corners {
-                    let path = Path { p in
-                        p.move(to: corner)
-                        p.addLine(to: mouseLocation)
+                Canvas { context, size in
+                    // ビューの四隅の座標（ローカル座標系）
+                    let corners = [
+                        CGPoint(x: 0, y: 0),
+                        CGPoint(x: size.width, y: 0),
+                        CGPoint(x: 0, y: size.height),
+                        CGPoint(x: size.width, y: size.height)
+                    ]
+
+                    // マウスがこの画面にあるかどうかを判断
+                    let isMouseInThisScreen = viewModel.currentScreen == screen
+
+                    // 各コーナーからマウス位置へのレーザー線を描画
+                    for corner in corners {
+                        let targetPoint: CGPoint
+
+                        if isMouseInThisScreen {
+                            // マウスがこの画面にある場合は、マウス位置に向けてレーザーを表示
+                            targetPoint = viewModel.mouseLocation
+                        } else {
+                            // マウスがこの画面にない場合は、画面の境界上の最も近い点に向けてレーザーを表示
+                            let globalMouseLocation = NSEvent.mouseLocation
+                            let screenFrame = screen.frame
+
+                            // 画面の境界上の最も近い点を計算
+                            let closestPoint = CGPoint(
+                                x: max(screenFrame.minX, min(globalMouseLocation.x, screenFrame.maxX)),
+                                y: max(screenFrame.minY, min(globalMouseLocation.y, screenFrame.maxY))
+                            )
+
+                            // ローカル座標系に変換
+                            targetPoint = CGPoint(
+                                x: closestPoint.x - screenFrame.origin.x,
+                                y: screenFrame.height - (closestPoint.y - screenFrame.origin.y)
+                            )
+                        }
+
+                        let path = Path { p in
+                            p.move(to: corner)
+                            p.addLine(to: targetPoint)
+                        }
+
+                        // グラデーションの設定
+                        let gradient = Gradient(stops: [
+                            .init(color: Color.red.opacity(0.7), location: 0),
+                            .init(color: Color.red.opacity(0.4), location: 0.8),
+                            .init(color: Color.red.opacity(0), location: 1.0)
+                        ])
+
+                        // 線を描画
+                        context.stroke(
+                            path,
+                            with: .linearGradient(
+                                gradient,
+                                startPoint: corner,
+                                endPoint: targetPoint
+                            ),
+                            style: StrokeStyle(lineWidth: 2, lineCap: .round)
+                        )
                     }
-
-                    // グラデーションの設定
-                    let gradient = Gradient(stops: [
-                        .init(color: Color.red.opacity(0.7), location: 0),
-                        .init(color: Color.red.opacity(0.4), location: 0.8),
-                        .init(color: Color.red.opacity(0), location: 1.0)
-                    ])
-
-                    // 線を描画
-                    context.stroke(
-                        path,
-                        with: .linearGradient(
-                            gradient,
-                            startPoint: corner,
-                            endPoint: mouseLocation
-                        ),
-                        style: StrokeStyle(lineWidth: 2, lineCap: .round)
-                    )
-
-                    // グローエフェクトを追加
-                    context.addFilter(.blur(radius: 2))
                 }
+                .drawingGroup() // Metalレンダリングエラーを回避するための最適化
             }
         }
     }
