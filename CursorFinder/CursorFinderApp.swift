@@ -7,6 +7,7 @@ import Combine
 struct CursorFinderApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
+
     var body: some Scene {
         WindowGroup {
             EmptyView()
@@ -70,7 +71,7 @@ class ScreenManager: ObservableObject {
         for screen in NSScreen.screens {
             let viewModel = LaserViewModel()
             let hostingController = NSHostingController(
-                rootView: LaserOverlayView(viewModel: viewModel)
+                rootView: LaserOverlayView(viewModel: viewModel, screen: screen)
                     .frame(width: screen.frame.width, height: screen.frame.height)
             )
 
@@ -109,50 +110,81 @@ class ScreenManager: ObservableObject {
 
 // MARK: - ViewModel
 class LaserViewModel: ObservableObject {
-    @Published var mouseLocation: CGPoint = .zero
     @Published var isVisible: Bool = true
-    @Published var currentScreen: NSScreen?
+    @Published var currentMouseLocation: CGPoint = .zero
 
     private var cancellables = Set<AnyCancellable>()
     private var mouseMoveMonitor: Any?
-    private var lastMouseLocation: CGPoint = .zero
+    private var mouseDragMonitor: Any?
     private var inactivitySubject = PassthroughSubject<Void, Never>()
+    private var lastMouseMoveTime: Date = Date()
     private let inactivityThreshold: TimeInterval = 2.0
+    private var mousePositionTimer: Timer?
 
     init() {
         setupInactivityPublisher()
+        startMousePositionTimer()
     }
 
     private func setupInactivityPublisher() {
         inactivitySubject
             .debounce(for: .seconds(inactivityThreshold), scheduler: RunLoop.main)
             .sink { [weak self] _ in
-                self?.isVisible = false
+                guard let self = self else { return }
+                // 最後のマウス移動から2秒以上経過した場合のみ非表示にする
+                let currentTime = Date()
+                if currentTime.timeIntervalSince(self.lastMouseMoveTime) >= self.inactivityThreshold {
+                    self.isVisible = false
+                }
             }
             .store(in: &cancellables)
+    }
+
+    private func startMousePositionTimer() {
+        // 60FPSに近い更新頻度で位置を更新
+        mousePositionTimer = Timer.scheduledTimer(withTimeInterval: 1.0/60.0, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            let location = NSEvent.mouseLocation
+
+            // 現在の位置と保存されている位置が異なる場合、マウスが移動したとみなす
+            if self.currentMouseLocation != location {
+                self.lastMouseMoveTime = Date()
+                self.isVisible = true
+                self.inactivitySubject.send()
+            }
+
+            DispatchQueue.main.async {
+                self.currentMouseLocation = location
+            }
+        }
     }
 
     func startTracking() {
         stopTracking()
 
+        // マウス移動の監視
         mouseMoveMonitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { [weak self] event in
             guard let self = self else { return }
+            self.lastMouseMoveTime = Date()
 
-            let globalLocation = NSEvent.mouseLocation
+            // マウスの動きを検出したらUIを表示
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.isVisible = true
+                self.inactivitySubject.send()
+            }
+        }
 
-            // マウスがあるスクリーンを特定
-            if let screen = NSScreen.screens.first(where: { $0.frame.contains(globalLocation) }) {
-                let screenLocation = CGPoint(
-                    x: globalLocation.x - screen.frame.origin.x,
-                    y: screen.frame.height - (globalLocation.y - screen.frame.origin.y)
-                )
+        // マウスドラッグの監視
+        mouseDragMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDragged) { [weak self] event in
+            guard let self = self else { return }
+            self.lastMouseMoveTime = Date()
 
-                // UIの更新はメインスレッドで行う
-                DispatchQueue.main.async { [weak self] in
-                    guard let self = self else { return }
-                    self.currentScreen = screen
-                    self.updateMouseLocationInternal(screenLocation)
-                }
+            // マウスドラッグを検出したらUIを表示
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.isVisible = true
+                self.inactivitySubject.send()
             }
         }
 
@@ -162,31 +194,21 @@ class LaserViewModel: ObservableObject {
         }
     }
 
-    // 内部での使用のみのメソッド
-    private func updateMouseLocationInternal(_ newLocation: CGPoint) {
-        if mouseLocation != newLocation {
-            mouseLocation = newLocation
-            isVisible = true
-            inactivitySubject.send()
-        }
-    }
-
-    // 外部から呼ばれる可能性のあるメソッド
-    func updateMouseLocation(_ newLocation: CGPoint) {
-        DispatchQueue.main.async { [weak self] in
-            self?.updateMouseLocationInternal(newLocation)
-        }
-    }
-
     func stopTracking() {
         if let monitor = mouseMoveMonitor {
             NSEvent.removeMonitor(monitor)
             mouseMoveMonitor = nil
         }
+
+        if let monitor = mouseDragMonitor {
+            NSEvent.removeMonitor(monitor)
+            mouseDragMonitor = nil
+        }
     }
 
     deinit {
         stopTracking()
+        mousePositionTimer?.invalidate()
         for cancellable in cancellables {
             cancellable.cancel()
         }
@@ -197,11 +219,12 @@ class LaserViewModel: ObservableObject {
 // MARK: - Views
 struct LaserOverlayView: View {
     @ObservedObject var viewModel: LaserViewModel
+    let screen: NSScreen
 
     var body: some View {
         ZStack {
-            if viewModel.isVisible, let currentScreen = viewModel.currentScreen {
-                LaserCanvasView(viewModel: viewModel, screen: currentScreen)
+            if viewModel.isVisible {
+                LaserCanvasView(viewModel: viewModel, screen: screen)
             }
         }
         .ignoresSafeArea()
@@ -227,34 +250,21 @@ struct LaserCanvasView: View {
                         CGPoint(x: size.width, y: size.height)
                     ]
 
-                    // マウスがこの画面にあるかどうかを判断
-                    let isMouseInThisScreen = viewModel.currentScreen == screen
+                    // グローバル座標系でのマウス位置
+                    let globalMouseLocation = viewModel.currentMouseLocation
+
+                    // 現在の画面のローカル座標系に変換
+                    // macOSの座標系では左下が原点、Y軸は上向きが正
+                    let localX = globalMouseLocation.x - screen.frame.minX
+                    let localY = globalMouseLocation.y - screen.frame.minY
+
+                    // macOSでの座標系（左下原点）からSwiftUIの座標系（左上原点）に変換
+                    let convertedY = screen.frame.height - localY
+
+                    let targetPoint = CGPoint(x: localX, y: convertedY)
 
                     // 各コーナーからマウス位置へのレーザー線を描画
                     for corner in corners {
-                        let targetPoint: CGPoint
-
-                        if isMouseInThisScreen {
-                            // マウスがこの画面にある場合は、マウス位置に向けてレーザーを表示
-                            targetPoint = viewModel.mouseLocation
-                        } else {
-                            // マウスがこの画面にない場合は、画面の境界上の最も近い点に向けてレーザーを表示
-                            let globalMouseLocation = NSEvent.mouseLocation
-                            let screenFrame = screen.frame
-
-                            // 画面の境界上の最も近い点を計算
-                            let closestPoint = CGPoint(
-                                x: max(screenFrame.minX, min(globalMouseLocation.x, screenFrame.maxX)),
-                                y: max(screenFrame.minY, min(globalMouseLocation.y, screenFrame.maxY))
-                            )
-
-                            // ローカル座標系に変換
-                            targetPoint = CGPoint(
-                                x: closestPoint.x - screenFrame.origin.x,
-                                y: screenFrame.height - (closestPoint.y - screenFrame.origin.y)
-                            )
-                        }
-
                         let path = Path { p in
                             p.move(to: corner)
                             p.addLine(to: targetPoint)
