@@ -6,7 +6,7 @@ import Combine
 @main
 struct CursorFinderApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    
+
     var body: some Scene {
         WindowGroup {
             EmptyView()
@@ -19,11 +19,11 @@ struct CursorFinderApp: App {
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var screenManager = ScreenManager()
-    
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusBar()
         screenManager.setupOverlays()
-        
+
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(screensDidChange),
@@ -31,26 +31,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil
         )
     }
-    
+
     private func setupStatusBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        
+
         if let button = statusItem?.button {
             button.title = "🔍"
         }
-        
+
         let menu = NSMenu()
         let quitItem = NSMenuItem(title: "Quit", action: #selector(quitApp), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
-        
+
         statusItem?.menu = menu
     }
-    
+
     @objc private func screensDidChange() {
         screenManager.setupOverlays()
     }
-    
+
     @objc private func quitApp() {
         NSApplication.shared.terminate(nil)
     }
@@ -59,43 +59,43 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 // MARK: - ScreenManager
 class ScreenManager: ObservableObject {
     @Published var overlayWindows: [NSWindow] = []
-    
+
     init() {
         setupOverlays()
     }
-    
+
     func setupOverlays() {
         removeOverlays()
-        
+
         for screen in NSScreen.screens {
             let viewModel = LaserViewModel()
             let hostingController = NSHostingController(
                 rootView: LaserOverlayView(viewModel: viewModel)
                     .frame(width: screen.frame.width, height: screen.frame.height)
             )
-            
+
             let window = NSWindow(
                 contentRect: screen.frame,
                 styleMask: .borderless,
                 backing: .buffered,
                 defer: false
             )
-            
+
             window.contentView = hostingController.view
             window.backgroundColor = .clear
             window.isOpaque = false
             window.level = .floating
             window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             window.ignoresMouseEvents = true
-            
+
             window.setFrame(screen.frame, display: true)
             window.orderFront(nil)
-            
+
             viewModel.startTracking()
             overlayWindows.append(window)
         }
     }
-    
+
     func removeOverlays() {
         for window in overlayWindows {
             if let contentView = window.contentViewController as? NSHostingController<LaserOverlayView> {
@@ -111,17 +111,17 @@ class ScreenManager: ObservableObject {
 class LaserViewModel: ObservableObject {
     @Published var mouseLocation: CGPoint = .zero
     @Published var isVisible: Bool = true
-    
+
     private var cancellables = Set<AnyCancellable>()
     private var mouseMoveMonitor: Any?
     private var lastMouseLocation: CGPoint = .zero
     private var inactivitySubject = PassthroughSubject<Void, Never>()
     private let inactivityThreshold: TimeInterval = 2.0
-    
+
     init() {
         setupInactivityPublisher()
     }
-    
+
     private func setupInactivityPublisher() {
         inactivitySubject
             .debounce(for: .seconds(inactivityThreshold), scheduler: RunLoop.main)
@@ -130,35 +130,32 @@ class LaserViewModel: ObservableObject {
             }
             .store(in: &cancellables)
     }
-    
+
     func startTracking() {
         stopTracking()
-        
-        // グローバルマウスイベントモニターを設定
+
         mouseMoveMonitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { [weak self] event in
             guard let self = self else { return }
-            
+
             let globalLocation = NSEvent.mouseLocation
-            
-            // ウィンドウがあれば座標変換を行う
-            if let window = event.window {
-                let windowLocation = window.convertPoint(fromScreen: globalLocation)
-                
+
+            // マウスがあるスクリーンを特定
+            if let screen = NSScreen.screens.first(where: { $0.frame.contains(globalLocation) }) {
+                // スクリーン座標系に変換
+                let screenLocation = CGPoint(
+                    x: globalLocation.x - screen.frame.origin.x,
+                    y: screen.frame.height - (globalLocation.y - screen.frame.origin.y)
+                )
+
                 DispatchQueue.main.async {
-                    self.updateMouseLocation(windowLocation)
-                }
-            } else {
-                // ウィンドウがない場合はグローバル座標を使用
-                DispatchQueue.main.async {
-                    self.updateMouseLocation(globalLocation)
+                    self.updateMouseLocation(screenLocation)
                 }
             }
         }
-        
-        // 初期状態を設定
+
         isVisible = true
     }
-    
+
     func updateMouseLocation(_ newLocation: CGPoint) {
         if mouseLocation != newLocation {
             mouseLocation = newLocation
@@ -166,14 +163,14 @@ class LaserViewModel: ObservableObject {
             inactivitySubject.send()
         }
     }
-    
+
     func stopTracking() {
         if let monitor = mouseMoveMonitor {
             NSEvent.removeMonitor(monitor)
             mouseMoveMonitor = nil
         }
     }
-    
+
     deinit {
         stopTracking()
         for cancellable in cancellables {
@@ -186,7 +183,7 @@ class LaserViewModel: ObservableObject {
 // MARK: - Views
 struct LaserOverlayView: View {
     @ObservedObject var viewModel: LaserViewModel
-    
+
     var body: some View {
         ZStack {
             if viewModel.isVisible {
@@ -200,32 +197,32 @@ struct LaserOverlayView: View {
 
 struct LaserCanvasView: View {
     let mouseLocation: CGPoint
-    
+
     var body: some View {
         GeometryReader { geometry in
             Canvas { context, size in
-                // ビューの四隅の座標
+                // ビューの四隅の座標（ローカル座標系）
                 let corners = [
                     CGPoint(x: 0, y: 0),
                     CGPoint(x: size.width, y: 0),
                     CGPoint(x: 0, y: size.height),
                     CGPoint(x: size.width, y: size.height)
                 ]
-                
+
                 // 各コーナーからマウス位置へのレーザー線を描画
                 for corner in corners {
                     let path = Path { p in
                         p.move(to: corner)
                         p.addLine(to: mouseLocation)
                     }
-                    
+
                     // グラデーションの設定
                     let gradient = Gradient(stops: [
                         .init(color: Color.red.opacity(0.7), location: 0),
                         .init(color: Color.red.opacity(0.4), location: 0.8),
                         .init(color: Color.red.opacity(0), location: 1.0)
                     ])
-                    
+
                     // 線を描画
                     context.stroke(
                         path,
@@ -236,7 +233,7 @@ struct LaserCanvasView: View {
                         ),
                         style: StrokeStyle(lineWidth: 2, lineCap: .round)
                     )
-                    
+
                     // グローエフェクトを追加
                     context.addFilter(.blur(radius: 2))
                 }
