@@ -162,25 +162,12 @@ class LaserViewModel: ObservableObject {
     func startTracking() {
         stopTracking()
 
-        // マウス移動の監視
-        mouseMoveMonitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { [weak self] event in
+        // マウス移動の監視（mouseMovedはleftMouseDraggedの動きを含まないので両方監視）
+        mouseMoveMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .leftMouseDragged]) { [weak self] event in
             guard let self = self else { return }
             self.lastMouseMoveTime = Date()
 
             // マウスの動きを検出したらUIを表示
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                self.isVisible = true
-                self.inactivitySubject.send()
-            }
-        }
-
-        // マウスドラッグの監視
-        mouseDragMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDragged) { [weak self] event in
-            guard let self = self else { return }
-            self.lastMouseMoveTime = Date()
-
-            // マウスドラッグを検出したらUIを表示
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
                 self.isVisible = true
