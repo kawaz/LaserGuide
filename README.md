@@ -23,15 +23,18 @@ A macOS app that displays laser-like lines from screen corners to your mouse cur
 
 ## Installation
 
-### Install via Homebrew (Coming Soon)
+### Install via Homebrew
 
-Once the Homebrew tap is set up:
 ```bash
-brew tap kawaz/tap
+# Method 1: Direct install
+brew install kawaz/cursorfinder/cursorfinder
+
+# Method 2: Add tap first
+brew tap kawaz/cursorfinder https://github.com/kawaz/CursorFinder
 brew install cursorfinder
 ```
 
-For now, please use the pre-built binary or build from source.
+Note: Homebrew formula will be available after the first release is published.
 
 ### Build from Source (Xcode)
 
