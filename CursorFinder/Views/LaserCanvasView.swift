@@ -42,34 +42,47 @@ struct LaserCanvasView: View {
         let convertedY = screen.frame.height - localY
         let targetPoint = CGPoint(x: localX, y: convertedY)
         
-        // Calculate normalized distance (0-1) for visual feedback
-        let maxDistance = hypot(size.width, size.height)
-        let normalizedDistance = min(viewModel.mouseDistance / maxDistance, 1.0)
-        
         for corner in corners {
+            // Create tapered path (trapezoid/triangle shape)
             let path = Path { p in
-                p.move(to: corner)
-                p.addLine(to: targetPoint)
+                // Calculate perpendicular vector for creating trapezoid width
+                let dx = targetPoint.x - corner.x
+                let dy = targetPoint.y - corner.y
+                let length = hypot(dx, dy)
+                
+                if length > 0 {
+                    // Normalize and create perpendicular vector
+                    let perpX = -dy / length
+                    let perpY = dx / length
+                    
+                    // Width at corner (thick) and at target (thin)
+                    let cornerWidth: CGFloat = 8.0
+                    let targetWidth: CGFloat = 0.5
+                    
+                    // Create trapezoid points
+                    let corner1 = CGPoint(x: corner.x + perpX * cornerWidth, y: corner.y + perpY * cornerWidth)
+                    let corner2 = CGPoint(x: corner.x - perpX * cornerWidth, y: corner.y - perpY * cornerWidth)
+                    let target1 = CGPoint(x: targetPoint.x + perpX * targetWidth, y: targetPoint.y + perpY * targetWidth)
+                    let target2 = CGPoint(x: targetPoint.x - perpX * targetWidth, y: targetPoint.y - perpY * targetWidth)
+                    
+                    // Draw trapezoid
+                    p.move(to: corner1)
+                    p.addLine(to: target1)
+                    p.addLine(to: target2)
+                    p.addLine(to: corner2)
+                    p.closeSubpath()
+                }
             }
             
             // Create gradient
             let gradient = Gradient(stops: Config.Visual.gradientStops)
             
-            // Calculate line width based on distance
-            let lineWidth = Config.Visual.minLineWidth + 
-                           (Config.Visual.maxLineWidth - Config.Visual.minLineWidth) * (1.0 - normalizedDistance)
-            
-            context.stroke(
+            context.fill(
                 path,
                 with: .linearGradient(
                     gradient,
                     startPoint: corner,
                     endPoint: targetPoint
-                ),
-                style: StrokeStyle(
-                    lineWidth: lineWidth,
-                    lineCap: .round,
-                    lineJoin: .round
                 )
             )
         }
