@@ -108,3 +108,8 @@ iOSInjectionProject/
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# Build output
+build/
+CursorFinder.zip
+export-options.plist

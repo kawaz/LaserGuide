@@ -23,6 +23,13 @@ A macOS app that displays laser-like lines from screen corners to your mouse cur
 
 ## Installation
 
+### Install via Homebrew
+
+```bash
+brew tap kawaz/tap
+brew install cursorfinder
+```
+
 ### Build from Source (Xcode)
 
 1. Clone the repository:
