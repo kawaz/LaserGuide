@@ -23,7 +23,7 @@ A macOS app that displays laser-like lines from screen corners to your mouse cur
 
 ## Installation
 
-### Build from Source
+### Build from Source (Xcode)
 
 1. Clone the repository:
 ```bash
@@ -37,6 +37,42 @@ open CursorFinder.xcodeproj
 ```
 
 3. Build and run the project (⌘+R)
+
+### Build from Source (CLI)
+
+1. Clone the repository:
+```bash
+git clone https://github.com/kawaz/CursorFinder.git
+cd CursorFinder
+```
+
+2. Build the app using xcodebuild:
+```bash
+# Build for Debug
+xcodebuild -scheme CursorFinder -configuration Debug build
+
+# Build for Release
+xcodebuild -scheme CursorFinder -configuration Release build
+```
+
+3. The built app will be located at:
+```bash
+# Debug build
+~/Library/Developer/Xcode/DerivedData/CursorFinder-*/Build/Products/Debug/CursorFinder.app
+
+# Release build
+~/Library/Developer/Xcode/DerivedData/CursorFinder-*/Build/Products/Release/CursorFinder.app
+```
+
+4. Run the app:
+```bash
+# Find and run the Debug build
+open ~/Library/Developer/Xcode/DerivedData/CursorFinder-*/Build/Products/Debug/CursorFinder.app
+
+# Or copy to Applications folder (Release build)
+cp -r ~/Library/Developer/Xcode/DerivedData/CursorFinder-*/Build/Products/Release/CursorFinder.app /Applications/
+open /Applications/CursorFinder.app
+```
 
 ### Pre-built Binary
 
