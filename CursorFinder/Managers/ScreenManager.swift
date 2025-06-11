@@ -43,6 +43,9 @@ class ScreenManager: ObservableObject {
         window.ignoresMouseEvents = true
         window.hasShadow = false
         
+        // Exclude from screenshots by setting sharing type
+        window.sharingType = .none
+        
         // Enable Core Animation layer for better GPU performance
         if Config.Performance.useCoreAnimationLayers {
             window.contentView?.wantsLayer = true
