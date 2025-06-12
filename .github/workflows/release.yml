@@ -22,7 +22,9 @@ jobs:
             -derivedDataPath ./build \
             -destination 'generic/platform=macOS' \
             -archivePath ./build/CursorFinder.xcarchive \
-            archive
+            archive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO
       
       - name: Create ZIP
         run: |
