@@ -8,9 +8,8 @@ class Cursorfinder < Formula
   depends_on :macos => :sonoma
 
   def install
-    # The buildpath contains the extracted contents
-    app = buildpath/"CursorFinder.app"
-    prefix.install app
+    # Install the app
+    prefix.install "CursorFinder.app"
     
     # Create a command-line launcher
     (bin/"cursorfinder").write <<~EOS
