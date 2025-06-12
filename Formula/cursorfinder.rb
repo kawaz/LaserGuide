@@ -8,13 +8,15 @@ class Cursorfinder < Formula
   depends_on :macos => :sonoma
 
   def install
-    prefix.install "CursorFinder.app"
+    # The app is in the current directory after extraction
+    prefix.install Dir["CursorFinder.app"]
     
     # Create a command-line launcher
     (bin/"cursorfinder").write <<~EOS
       #!/bin/bash
       open "#{prefix}/CursorFinder.app"
     EOS
+    chmod 0755, bin/"cursorfinder"
   end
 
   def post_install
