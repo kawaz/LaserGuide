@@ -8,30 +8,30 @@ class Cursorfinder < Formula
   depends_on :macos => :sonoma
 
   def install
-    # Install the app
-    prefix.install "CursorFinder.app"
+    # Install the app bundle
+    libexec.install "CursorFinder.app"
     
     # Create a command-line launcher
     (bin/"cursorfinder").write <<~EOS
       #!/bin/bash
-      open "#{prefix}/CursorFinder.app"
+      open "#{libexec}/CursorFinder.app"
     EOS
     chmod 0755, bin/"cursorfinder"
   end
 
   def post_install
-    system "xattr", "-dr", "com.apple.quarantine", "#{prefix}/CursorFinder.app"
+    system "xattr", "-dr", "com.apple.quarantine", "#{libexec}/CursorFinder.app"
   end
 
   def caveats
     <<~EOS
-      CursorFinder has been installed to #{prefix}/CursorFinder.app
+      CursorFinder has been installed to #{libexec}/CursorFinder.app
       
       To launch CursorFinder:
         cursorfinder
       
       Or you can copy it to your Applications folder:
-        cp -r #{prefix}/CursorFinder.app /Applications/
+        cp -r #{libexec}/CursorFinder.app /Applications/
       
       CursorFinder requires accessibility permissions to track mouse movements.
       You will be prompted to grant these permissions on first launch.
@@ -39,6 +39,6 @@ class Cursorfinder < Formula
   end
 
   test do
-    assert_predicate prefix/"CursorFinder.app", :exist?
+    assert_predicate libexec/"CursorFinder.app", :exist?
   end
 end
