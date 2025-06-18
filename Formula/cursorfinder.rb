@@ -8,9 +8,15 @@ class Cursorfinder < Formula
   depends_on :macos => :sonoma
 
   def install
-    # Homebrew extracts the ZIP to a temp directory and moves contents to buildpath
-    # We need to install everything in the current directory
-    libexec.install Dir["*"]
+    # Check if CursorFinder.app exists in the buildpath
+    if (buildpath/"CursorFinder.app").exist?
+      # Standard installation when the app bundle exists
+      libexec.install "CursorFinder.app"
+    else
+      # Fallback: reconstruct the app bundle if only Contents exists
+      (libexec/"CursorFinder.app").mkpath
+      (libexec/"CursorFinder.app").install Dir["*"]
+    end
     
     # Create a command-line launcher
     (bin/"cursorfinder").write <<~EOS
