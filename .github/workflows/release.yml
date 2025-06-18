@@ -15,16 +15,56 @@ jobs:
         with:
           xcode-version: latest-stable
       
-      - name: Build Universal Binary
+      - name: Import Certificate
+        if: ${{ secrets.APPLE_CERTIFICATE_BASE64 != '' }}
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
         run: |
-          xcodebuild -scheme CursorFinder \
-            -configuration Release \
-            -derivedDataPath ./build \
-            -destination 'generic/platform=macOS' \
-            -archivePath ./build/CursorFinder.xcarchive \
-            archive \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO
+          # Create temporary keychain
+          KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+          
+          # Create keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          
+          # Import certificate
+          echo "$APPLE_CERTIFICATE_BASE64" | base64 --decode -o certificate.p12
+          security import certificate.p12 -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+          
+          # Set key partition list
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+      
+      - name: Build Universal Binary
+        env:
+          APPLE_DEVELOPMENT_TEAM: ${{ secrets.APPLE_DEVELOPMENT_TEAM }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          if [ -n "$APPLE_SIGNING_IDENTITY" ]; then
+            # Build with signing
+            xcodebuild -scheme CursorFinder \
+              -configuration Release \
+              -derivedDataPath ./build \
+              -destination 'generic/platform=macOS' \
+              -archivePath ./build/CursorFinder.xcarchive \
+              archive \
+              CODE_SIGN_IDENTITY="$APPLE_SIGNING_IDENTITY" \
+              DEVELOPMENT_TEAM="$APPLE_DEVELOPMENT_TEAM" \
+              CODE_SIGNING_REQUIRED=YES
+          else
+            # Build without signing
+            xcodebuild -scheme CursorFinder \
+              -configuration Release \
+              -derivedDataPath ./build \
+              -destination 'generic/platform=macOS' \
+              -archivePath ./build/CursorFinder.xcarchive \
+              archive \
+              CODE_SIGN_IDENTITY="" \
+              CODE_SIGNING_REQUIRED=NO
+          fi
       
       - name: Create ZIP
         run: |
