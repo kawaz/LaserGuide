@@ -31,7 +31,7 @@ Add the following secrets to your repository:
   ```
 - `APPLE_CERTIFICATE_PASSWORD`: The password you used when exporting
 - `APPLE_DEVELOPMENT_TEAM`: Your Team ID (e.g., "33YX9FVF45")
-- `APPLE_SIGNING_IDENTITY`: Your signing identity (e.g., "Apple Development: email@example.com (TEAM_ID)")
+- `APPLE_SIGNING_IDENTITY`: Your signing identity (e.g., "Apple Development: YOUR_EMAIL (TEAM_ID)")
 
 ### 3. Update Release Workflow
 
