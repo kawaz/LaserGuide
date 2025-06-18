@@ -1,8 +1,8 @@
 class Cursorfinder < Formula
   desc "Display laser lines from screen corners to your mouse cursor"
   homepage "https://github.com/kawaz/CursorFinder"
-  url "https://github.com/kawaz/CursorFinder/releases/download/v0.1.1/CursorFinder.zip"
-  sha256 "717ad588ce77ac9076918eb212ae105af3d663f920541c09de73c770b363f2c4"
+  url "https://github.com/kawaz/CursorFinder/releases/download/v0.1.2/CursorFinder.zip"
+  sha256 "d918dfce9923758fd83d1bdd0f66079b78ab5104bb6b987e298b9e5995f3fedf"
   license "MIT"
 
   depends_on :macos => :sonoma
