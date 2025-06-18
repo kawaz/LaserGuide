@@ -8,8 +8,14 @@ class Cursorfinder < Formula
   depends_on :macos => :sonoma
 
   def install
-    # Install the app bundle
-    libexec.install "CursorFinder.app"
+    # Install the app bundle from buildpath
+    app = buildpath/"CursorFinder.app"
+    if app.exist?
+      libexec.install app
+    else
+      # Fallback if the app is in the current directory
+      libexec.install "CursorFinder.app"
+    end
     
     # Create a command-line launcher
     (bin/"cursorfinder").write <<~EOS
