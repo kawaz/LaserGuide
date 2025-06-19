@@ -87,7 +87,7 @@ xcodebuild -scheme CursorFinder -configuration Release build
 
 [リリースページ](https://github.com/kawaz/CursorFinder/releases)から最新版をダウンロードしてください。
 
-1. [`CursorFinder.zip`](https://github.com/kawaz/CursorFinder/releases/latest/download/CursorFinder.zip)をダウンロード
+1. `CursorFinder.zip`をダウンロード
 2. 解凍して`CursorFinder.app`をアプリケーションフォルダに移動
 3. アプリを開く（初回は右クリックして「開く」を選択する必要があるかもしれません）
 
@@ -101,7 +101,7 @@ xcodebuild -scheme CursorFinder -configuration Release build
 
 ## 設定
 
-現在の設定オプションは[`Config.swift`](CursorFinder/Config/Config.swift)で変更可能:
+現在の設定オプションは[`Config.swift`](CursorFinder/Config.swift)で変更可能:
 
 - **表示設定**: 線の太さ、グラデーションカラー
 - **タイミング**: 非アクティブ時の閾値

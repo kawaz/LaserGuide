@@ -2,7 +2,7 @@
 
 このプロジェクトの注目すべき変更はすべてこのファイルに記録されます。
 
-フォーマットは[Keep a Changelog](https://keepachangelog.com/ja/1.0.0/)に基づいており、
+フォーマットは[Keep a Changelog](https://keepachangelog.com/ja/)に基づいており、
 このプロジェクトは[セマンティックバージョニング](https://semver.org/lang/ja/)に準拠しています。
 
 ## [未リリース]

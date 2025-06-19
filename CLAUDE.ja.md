@@ -74,8 +74,8 @@ CursorFinder/
 ```
 
 ### 主要ファイル
-- [`LaserViewModel.swift`](CursorFinder/ViewModels/LaserViewModel.swift) - コアレーザー表示ロジック
-- [`Config.swift`](CursorFinder/Config/Config.swift) - アプリ設定定数
+- [`LaserViewModel.swift`](CursorFinder/Models/LaserViewModel.swift) - コアレーザー表示ロジック
+- [`Config.swift`](CursorFinder/Config.swift) - アプリ設定定数
 - [`Makefile`](Makefile) - ビルドとリリースコマンド
 - [`Formula/cursorfinder.rb`](Formula/cursorfinder.rb) - Homebrew配布
 
@@ -132,7 +132,7 @@ CursorFinder/
    ```
 2. [`.code-workspace`](CursorFinder.code-workspace)を更新して新しいworktreeを含める
 3. 適切なマネージャー/ビューで実装
-4. 設定を追加する場合は[`Config.swift`](CursorFinder/Config/Config.swift)を更新
+4. 設定を追加する場合は[`Config.swift`](CursorFinder/Config.swift)を更新
 5. `make dev`でテスト
 6. README.mdの機能セクションを更新（日本語版も）
 7. `feat:`プレフィックスでコミット

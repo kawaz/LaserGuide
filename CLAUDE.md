@@ -74,8 +74,8 @@ CursorFinder/
 ```
 
 ### Key Files
-- [`LaserViewModel.swift`](CursorFinder/ViewModels/LaserViewModel.swift) - Core laser display logic
-- [`Config.swift`](CursorFinder/Config/Config.swift) - App configuration constants
+- [`LaserViewModel.swift`](CursorFinder/Models/LaserViewModel.swift) - Core laser display logic
+- [`Config.swift`](CursorFinder/Config.swift) - App configuration constants
 - [`Makefile`](Makefile) - Build and release commands
 - [`Formula/cursorfinder.rb`](Formula/cursorfinder.rb) - Homebrew distribution
 
@@ -132,7 +132,7 @@ CursorFinder/
    ```
 2. Update [`.code-workspace`](CursorFinder.code-workspace) to include new worktree
 3. Implement in appropriate manager/view
-4. Update [`Config.swift`](CursorFinder/Config/Config.swift) if adding settings
+4. Update [`Config.swift`](CursorFinder/Config.swift) if adding settings
 5. Test with `make dev`
 6. Update README.md features section
 7. Commit with `feat:` prefix
