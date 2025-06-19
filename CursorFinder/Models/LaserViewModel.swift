@@ -14,10 +14,15 @@ class LaserViewModel: ObservableObject {
     private var mousePositionTimer: Timer?
     private let screen: NSScreen
     
+    // Performance optimization properties
+    private var lastUpdateLocation: CGPoint = .zero
+    private var isActivelyMoving: Bool = false
+    private var updateInterval: TimeInterval = 1.0 / 30.0 // Start with 30 FPS
+    
     init(screen: NSScreen) {
         self.screen = screen
         setupInactivityPublisher()
-        startMousePositionTimer()
+        startAdaptiveMouseTracking()
     }
     
     private func setupInactivityPublisher() {
@@ -28,48 +33,97 @@ class LaserViewModel: ObservableObject {
                 let currentTime = Date()
                 if currentTime.timeIntervalSince(self.lastMouseMoveTime) >= Config.Timing.inactivityThreshold {
                     self.isVisible = false
+                    self.isActivelyMoving = false
+                    // Reset to lower frame rate when idle
+                    self.updateInterval = 1.0 / 30.0
                 }
             }
             .store(in: &cancellables)
     }
     
-    private func startMousePositionTimer() {
-        mousePositionTimer = Timer.scheduledTimer(withTimeInterval: Config.Timing.mousePositionUpdateInterval, repeats: true) { [weak self] _ in
+    private func startAdaptiveMouseTracking() {
+        // Use a single timer with adaptive interval
+        scheduleNextUpdate()
+    }
+    
+    private func scheduleNextUpdate() {
+        mousePositionTimer?.invalidate()
+        
+        mousePositionTimer = Timer.scheduledTimer(withTimeInterval: updateInterval, repeats: false) { [weak self] _ in
             guard let self = self else { return }
+            
             let location = NSEvent.mouseLocation
+            let movementDelta = hypot(location.x - self.lastUpdateLocation.x, 
+                                    location.y - self.lastUpdateLocation.y)
             
-            if self.currentMouseLocation != location {
-                self.lastMouseMoveTime = Date()
-                self.isVisible = true
-                self.inactivitySubject.send()
+            // Adaptive frame rate based on movement
+            if movementDelta > 10.0 {
+                // Fast movement - increase to 120 FPS
+                self.updateInterval = 1.0 / 120.0
+                self.isActivelyMoving = true
+            } else if movementDelta > 0.5 {
+                // Normal movement - 60 FPS
+                self.updateInterval = 1.0 / 60.0
+                self.isActivelyMoving = true
+            } else {
+                // Minimal or no movement - reduce to 30 FPS
+                self.updateInterval = 1.0 / 30.0
+                self.isActivelyMoving = false
             }
             
-            // Calculate distance from screen center for visual feedback
-            let screenCenter = CGPoint(
-                x: self.screen.frame.midX,
-                y: self.screen.frame.midY
-            )
-            let distance = hypot(location.x - screenCenter.x, location.y - screenCenter.y)
-            
-            DispatchQueue.main.async {
-                self.currentMouseLocation = location
-                self.mouseDistance = distance
+            // Only update if position changed significantly
+            if movementDelta > 0.1 || self.currentMouseLocation == .zero {
+                if self.currentMouseLocation != location {
+                    self.lastMouseMoveTime = Date()
+                    self.isVisible = true
+                    self.inactivitySubject.send()
+                }
+                
+                // Calculate distance from screen center
+                let screenCenter = CGPoint(
+                    x: self.screen.frame.midX,
+                    y: self.screen.frame.midY
+                )
+                let distance = hypot(location.x - screenCenter.x, location.y - screenCenter.y)
+                
+                // Update on main thread only if needed
+                if abs(self.currentMouseLocation.x - location.x) > 0.5 ||
+                   abs(self.currentMouseLocation.y - location.y) > 0.5 {
+                    DispatchQueue.main.async {
+                        self.currentMouseLocation = location
+                        self.mouseDistance = distance
+                    }
+                }
+                
+                self.lastUpdateLocation = location
             }
+            
+            // Schedule next update
+            self.scheduleNextUpdate()
         }
     }
     
     func startTracking() {
         stopTracking()
         
-        // Monitor mouse movement
+        // Monitor mouse movement for immediate response
         mouseMoveMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .leftMouseDragged, .rightMouseDragged]) { [weak self] event in
             guard let self = self else { return }
             self.lastMouseMoveTime = Date()
             
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                self.isVisible = true
-                self.inactivitySubject.send()
+            // Immediately show laser on movement
+            if !self.isVisible {
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { return }
+                    self.isVisible = true
+                    self.inactivitySubject.send()
+                }
+            }
+            
+            // Boost update rate on movement
+            if !self.isActivelyMoving {
+                self.isActivelyMoving = true
+                self.updateInterval = 1.0 / 120.0
             }
         }
         

@@ -10,26 +10,21 @@ struct LaserCanvasView: View {
             ZStack {
                 Color.clear
                 
-                if Config.Performance.useCoreAnimationLayers {
-                    // Use Metal-optimized rendering
-                    Canvas { context, size in
-                        drawLasers(context: context, size: size)
-                    }
-                    .drawingGroup() // Metal optimization
-                } else {
-                    // Fallback to standard rendering
-                    Canvas { context, size in
-                        drawLasers(context: context, size: size)
-                    }
+                // Always use Metal-optimized rendering
+                Canvas { context, size in
+                    drawLasers(context: context, size: size)
                 }
+                .drawingGroup(opaque: false, colorMode: .nonLinear) // Enhanced Metal optimization
                 
                 // Distance indicators for off-screen cursor
-                ForEach(getDistanceIndicators(size: geometry.size), id: \.corner) { indicator in
+                let indicators = getDistanceIndicators(size: geometry.size)
+                ForEach(indicators, id: \.corner) { indicator in
                     Text("\(Int(indicator.percentage))%")
                         .font(.system(size: 16, weight: .bold, design: .monospaced))
                         .foregroundColor(.white)
                         .shadow(color: .black, radius: 2, x: 1, y: 1)
                         .position(indicator.position)
+                        .drawingGroup() // GPU render text too
                 }
             }
         }
@@ -165,41 +160,22 @@ struct LaserCanvasView: View {
         let convertedY = screen.frame.height - localY
         let targetPoint = CGPoint(x: localX, y: convertedY)
         
+        // Pre-create gradient for reuse
+        let gradient = Gradient(stops: Config.Visual.gradientStops)
+        
+        // Batch draw all lasers
         for corner in corners {
-            // Create tapered path (trapezoid/triangle shape)
-            let path = Path { p in
-                // Calculate perpendicular vector for creating trapezoid width
-                let dx = targetPoint.x - corner.x
-                let dy = targetPoint.y - corner.y
-                let length = hypot(dx, dy)
-                
-                if length > 0 {
-                    // Normalize and create perpendicular vector
-                    let perpX = -dy / length
-                    let perpY = dx / length
-                    
-                    // Width at corner (thick) and at target (thin)
-                    let cornerWidth: CGFloat = 8.0
-                    let targetWidth: CGFloat = 0.5
-                    
-                    // Create trapezoid points
-                    let corner1 = CGPoint(x: corner.x + perpX * cornerWidth, y: corner.y + perpY * cornerWidth)
-                    let corner2 = CGPoint(x: corner.x - perpX * cornerWidth, y: corner.y - perpY * cornerWidth)
-                    let target1 = CGPoint(x: targetPoint.x + perpX * targetWidth, y: targetPoint.y + perpY * targetWidth)
-                    let target2 = CGPoint(x: targetPoint.x - perpX * targetWidth, y: targetPoint.y - perpY * targetWidth)
-                    
-                    // Draw trapezoid
-                    p.move(to: corner1)
-                    p.addLine(to: target1)
-                    p.addLine(to: target2)
-                    p.addLine(to: corner2)
-                    p.closeSubpath()
-                }
-            }
+            // Skip if target is too close to corner (optimization)
+            let dx = targetPoint.x - corner.x
+            let dy = targetPoint.y - corner.y
+            let length = hypot(dx, dy)
             
-            // Create gradient
-            let gradient = Gradient(stops: Config.Visual.gradientStops)
+            guard length > 1.0 else { continue }
             
+            // Create tapered path efficiently
+            let path = createLaserPath(from: corner, to: targetPoint, distance: length, dx: dx, dy: dy)
+            
+            // Apply gradient fill
             context.fill(
                 path,
                 with: .linearGradient(
@@ -208,6 +184,32 @@ struct LaserCanvasView: View {
                     endPoint: targetPoint
                 )
             )
+        }
+    }
+    
+    @inline(__always)
+    private func createLaserPath(from corner: CGPoint, to target: CGPoint, distance: CGFloat, dx: CGFloat, dy: CGFloat) -> Path {
+        Path { p in
+            // Normalize and create perpendicular vector
+            let perpX = -dy / distance
+            let perpY = dx / distance
+            
+            // Width at corner (thick) and at target (thin)
+            let cornerWidth: CGFloat = 8.0
+            let targetWidth: CGFloat = 0.5
+            
+            // Create trapezoid points
+            let corner1 = CGPoint(x: corner.x + perpX * cornerWidth, y: corner.y + perpY * cornerWidth)
+            let corner2 = CGPoint(x: corner.x - perpX * cornerWidth, y: corner.y - perpY * cornerWidth)
+            let target1 = CGPoint(x: target.x + perpX * targetWidth, y: target.y + perpY * targetWidth)
+            let target2 = CGPoint(x: target.x - perpX * targetWidth, y: target.y - perpY * targetWidth)
+            
+            // Draw trapezoid
+            p.move(to: corner1)
+            p.addLine(to: target1)
+            p.addLine(to: target2)
+            p.addLine(to: corner2)
+            p.closeSubpath()
         }
     }
 }
