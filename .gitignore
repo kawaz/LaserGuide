@@ -116,3 +116,4 @@ Temporary Items
 build/
 CursorFinder.zip
 export-options.plist
+/.worktrees/
