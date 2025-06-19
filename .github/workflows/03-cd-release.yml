@@ -58,16 +58,20 @@ jobs:
 
       - name: Create ZIP
         run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"  # Remove v prefix
+          ZIP_NAME="CursorFinder-${VERSION}.zip"
+          
           cd build/CursorFinder.xcarchive/Products/Applications
-          zip -r ../../../CursorFinder.zip CursorFinder.app
+          zip -r ../../../"${ZIP_NAME}" CursorFinder.app
           cd -
-          mv build/CursorFinder.zip .
+          mv build/"${ZIP_NAME}" .
 
       - name: Create Release with Asset
         uses: softprops/action-gh-release@v2
         with:
           body_path: release_notes.md
-          files: CursorFinder.zip
+          files: CursorFinder-*.zip
           generate_release_notes: false
           draft: false
           prerelease: false
@@ -77,11 +81,11 @@ jobs:
           # バージョンとSHA256を取得
           VERSION="${{ github.ref_name }}"
           VERSION="${VERSION#v}"  # v接頭辞を削除
-          SHA256=$(shasum -a 256 CursorFinder.zip | awk '{print $1}')
+          SHA256=$(shasum -a 256 CursorFinder-${VERSION}.zip | awk '{print $1}')
           
           # Formulaを更新
           sed -i '' \
-            -e "s|download/v[0-9.]*|download/v${VERSION}|" \
+            -e "s|download/v[0-9.]*/CursorFinder\.zip|download/v${VERSION}/CursorFinder-${VERSION}.zip|" \
             -e "s|sha256 \"[a-f0-9]*\"|sha256 \"${SHA256}\"|" \
             Formula/cursorfinder.rb
           
