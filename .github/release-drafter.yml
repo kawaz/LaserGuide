@@ -1,3 +1,7 @@
+# Configuration for release-drafter/release-drafter@v5 GitHub Action
+# This file configures how release notes are automatically generated from pull requests
+# Used by .github/workflows/02-cd-draft-release.yml
+
 name-template: 'v$RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
 categories:
