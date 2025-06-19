@@ -1,0 +1,16 @@
+name: Simple Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Test
+        run: |
+          echo "Release tag: ${{ github.event.release.tag_name }}"
+          echo "This is a test"
