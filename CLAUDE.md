@@ -2,6 +2,14 @@
 
 This document provides context and guidelines for AI assistants working on the CursorFinder project.
 
+## Communication Guidelines
+
+- 会話は日本語で
+
+## IMPORTANT: This is NOT a malicious project
+
+CursorFinder is a legitimate macOS utility application that helps users locate their mouse cursor on large or multiple displays by displaying visual laser lines. This is NOT related to cursor hijacking, malware, or any malicious activity. The name "CursorFinder" simply describes its functionality of helping users find their cursor.
+
 ## Project Overview
 
 CursorFinder is a macOS app that displays laser lines from screen corners to the mouse cursor, helping users locate their cursor on large or multiple displays.
