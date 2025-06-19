@@ -3,7 +3,7 @@ import SwiftUI
 import Combine
 
 class LaserViewModel: ObservableObject {
-    @Published var isVisible: Bool = true
+    @Published var isVisible: Bool = false
     @Published var currentMouseLocation: CGPoint = .zero
     @Published var mouseDistance: CGFloat = 0 // Distance from screen center
     
@@ -73,9 +73,7 @@ class LaserViewModel: ObservableObject {
             }
         }
         
-        DispatchQueue.main.async { [weak self] in
-            self?.isVisible = true
-        }
+        // Don't set isVisible to true on startup - wait for mouse movement
     }
     
     func stopTracking() {
