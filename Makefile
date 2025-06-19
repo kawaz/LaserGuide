@@ -1,4 +1,4 @@
-.PHONY: help clean dev version-patch version-minor version-major
+.PHONY: help clean dev build-debug build-release build-release-zip version-patch version-minor version-major
 
 # 現在のバージョンを取得
 CURRENT_VERSION := $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.0.0")
@@ -6,8 +6,11 @@ CURRENT_VERSION := $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^
 # デフォルトターゲット
 help:
 	@echo "使用可能なコマンド:"
-	@echo "  make dev     - 開発用ビルド（デバッグモード）"
-	@echo "  make clean   - ビルド成果物を削除"
+	@echo "  make dev             - デバッグビルド＆起動"
+	@echo "  make build-debug     - デバッグビルドのみ"
+	@echo "  make build-release   - リリースビルド"
+	@echo "  make build-release-zip - リリースビルド＆zip作成"
+	@echo "  make clean           - ビルド成果物を削除"
 	@echo ""
 	@echo "バージョン管理 (現在: v$(CURRENT_VERSION)):"
 	@echo "  make version-patch - パッチリリース (x.x.Z)"
@@ -23,9 +26,15 @@ clean:
 	@find . -name ".DS_Store" -delete
 	@echo "✅ クリーンアップ完了"
 
-# 開発用ビルド
-dev:
-	@echo "🔨 開発用ビルド中..."
+# 開発用ビルド＆起動
+dev: build-debug
+	@echo "🚀 アプリを起動中..."
+	@killall CursorFinder 2>/dev/null || true
+	@open build/Build/Products/Debug/CursorFinder.app
+
+# デバッグビルド
+build-debug:
+	@echo "🔨 デバッグビルド中..."
 	@xcodebuild -project CursorFinder.xcodeproj \
 		-scheme CursorFinder \
 		-configuration Debug \
@@ -33,7 +42,25 @@ dev:
 		build
 	@echo "✅ ビルド完了!"
 	@echo "アプリの場所: $$(pwd)/build/Build/Products/Debug/CursorFinder.app"
-	@echo "起動: killall CursorFinder 2>/dev/null; open build/Build/Products/Debug/CursorFinder.app"
+
+# リリースビルド
+build-release:
+	@echo "📦 リリースビルド中..."
+	@xcodebuild -project CursorFinder.xcodeproj \
+		-scheme CursorFinder \
+		-configuration Release \
+		-derivedDataPath build \
+		-archivePath build/CursorFinder.xcarchive \
+		archive
+	@echo "✅ リリースビルド完了!"
+
+# リリースビルド＆zip作成
+build-release-zip: clean build-release
+	@echo "🎁 zipファイルを作成中..."
+	@cd build/CursorFinder.xcarchive/Products/Applications && \
+		zip -r ../../../../CursorFinder.zip CursorFinder.app
+	@echo "✅ CursorFinder.zip を作成しました"
+	@ls -lh CursorFinder.zip
 
 # バージョン管理
 version-patch:
