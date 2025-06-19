@@ -78,6 +78,18 @@ _bump-version:
 	@git fetch --tags --quiet
 	@# 最新のバージョンを取得（ローカルとリモート両方を確認）
 	@LATEST_VERSION=$$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.0.0") && \
+	LATEST_TAG_COMMIT=$$(git rev-list -n 1 v$$LATEST_VERSION 2>/dev/null || echo "") && \
+	HEAD_COMMIT=$$(git rev-parse HEAD) && \
+	if [ "$$LATEST_TAG_COMMIT" = "$$HEAD_COMMIT" ]; then \
+		echo "❌ 現在のコミット(HEAD)は既に v$$LATEST_VERSION でタグ付けされています！" && \
+		echo "" && \
+		echo "新しいコミットを作成してからリリースしてください:" && \
+		echo "   1. コードを変更" && \
+		echo "   2. git add . && git commit -m 'your changes'" && \
+		echo "   3. git push" && \
+		echo "   4. make version-patch/minor/major" && \
+		exit 1; \
+	fi && \
 	if [ -n "$$(git status --porcelain)" ]; then \
 		echo "❌ 未コミットの変更があります！" && \
 		echo "" && \
