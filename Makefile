@@ -1,4 +1,4 @@
-.PHONY: help clean dev build-debug build-release build-release-zip version-patch version-minor version-major
+.PHONY: help clean dev build-debug build-release build-zip version-patch version-minor version-major
 
 # 現在のバージョンを取得
 CURRENT_VERSION := $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.0.0")
@@ -9,7 +9,7 @@ help:
 	@echo "  make dev             - デバッグビルド＆起動"
 	@echo "  make build-debug     - デバッグビルドのみ"
 	@echo "  make build-release   - リリースビルド"
-	@echo "  make build-release-zip - リリースビルド＆zip作成"
+	@echo "  make build-zip       - リリースビルド＆zip作成"
 	@echo "  make clean           - ビルド成果物を削除"
 	@echo ""
 	@echo "バージョン管理 (現在: v$(CURRENT_VERSION)):"
@@ -55,7 +55,7 @@ build-release:
 	@echo "✅ リリースビルド完了!"
 
 # リリースビルド＆zip作成
-build-release-zip: clean build-release
+build-zip: clean build-release
 	@echo "🎁 zipファイルを作成中..."
 	@cd build/CursorFinder.xcarchive/Products/Applications && \
 		zip -r ../../../../CursorFinder.zip CursorFinder.app
