@@ -22,7 +22,7 @@ CursorFinderは、大画面や複数ディスプレイでマウスカーソル�
   git worktree remove .worktrees/feature-name
   git branch -d feature/feature-name
   ```
-- **workspaceファイルを更新**: worktree作成時、新しいディレクトリを含むよう`.code-workspace`を更新
+- **workspaceファイルを更新**: worktree作成時、新しいディレクトリを含むよう[`.code-workspace`](CursorFinder.code-workspace)を更新
 - **マージ前に承認を得る**: mainにマージする前に変更を人間に説明し、確認を得る
 
 ### コミットの実践
@@ -74,10 +74,10 @@ CursorFinder/
 ```
 
 ### 主要ファイル
-- `LaserViewModel.swift` - コアレーザー表示ロジック
-- `Config.swift` - アプリ設定定数
-- `Makefile` - ビルドとリリースコマンド
-- `Formula/cursorfinder.rb` - Homebrew配布
+- [`LaserViewModel.swift`](CursorFinder/ViewModels/LaserViewModel.swift) - コアレーザー表示ロジック
+- [`Config.swift`](CursorFinder/Config/Config.swift) - アプリ設定定数
+- [`Makefile`](Makefile) - ビルドとリリースコマンド
+- [`Formula/cursorfinder.rb`](Formula/cursorfinder.rb) - Homebrew配布
 
 ## リリースプロセス
 
@@ -95,14 +95,14 @@ CursorFinder/
 
 ### コード署名
 - **現在無効**: ビルドは`CODE_SIGNING_REQUIRED=NO`を使用
-- **ドキュメントあり**: 将来の実装については`docs/code-signing.md`参照
+- **ドキュメントあり**: 将来の実装については[`docs/code-signing.md`](docs/code-signing.md)参照
 - **理由**: オープンソースプロジェクトの配布が容易
 
 ### ワークフロー
-1. `01-ci-test.yml` - 毎pushでテスト
-2. `02-cd-draft-release.yml` - リリースノート準備
-3. `03-cd-release.yml` - タグpushでビルドとデプロイ
-4. `04-cd-auto-release.yml` - mainへのpushで自動バージョニングとタグ付け
+1. [`01-ci-test.yml`](.github/workflows/01-ci-test.yml) - 毎pushでテスト
+2. [`02-cd-draft-release.yml`](.github/workflows/02-cd-draft-release.yml) - リリースノート準備
+3. [`03-cd-release.yml`](.github/workflows/03-cd-release.yml) - タグpushでビルドとデプロイ
+4. [`04-cd-auto-release.yml`](.github/workflows/04-cd-auto-release.yml) - mainへのpushで自動バージョニングとタグ付け
 
 ## 変更のガイドライン
 
@@ -130,9 +130,9 @@ CursorFinder/
    git worktree add .worktrees/feature-name -b feature/feature-name
    cd .worktrees/feature-name
    ```
-2. `.code-workspace`を更新して新しいworktreeを含める
+2. [`.code-workspace`](CursorFinder.code-workspace)を更新して新しいworktreeを含める
 3. 適切なマネージャー/ビューで実装
-4. 設定を追加する場合はConfig.swiftを更新
+4. 設定を追加する場合は[`Config.swift`](CursorFinder/Config/Config.swift)を更新
 5. `make dev`でテスト
 6. README.mdの機能セクションを更新（日本語版も）
 7. `feat:`プレフィックスでコミット

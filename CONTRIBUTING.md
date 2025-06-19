@@ -69,7 +69,7 @@ make dev
 make build-debug
 
 # Test Homebrew formula locally
-brew install --build-from-source Formula/cursorfinder.rb
+brew install --build-from-source [Formula/cursorfinder.rb](Formula/cursorfinder.rb)
 ```
 
 ## Pull Request Process

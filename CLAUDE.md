@@ -22,7 +22,7 @@ CursorFinder is a macOS app that displays laser lines from screen corners to the
   git worktree remove .worktrees/feature-name
   git branch -d feature/feature-name
   ```
-- **Update workspace file**: When creating worktree, update `.code-workspace` to include the new directory
+- **Update workspace file**: When creating worktree, update [`.code-workspace`](CursorFinder.code-workspace) to include the new directory
 - **Get approval before merge**: Explain changes to human and get confirmation before merging to main
 
 ### Commit Practices
@@ -74,10 +74,10 @@ CursorFinder/
 ```
 
 ### Key Files
-- `LaserViewModel.swift` - Core laser display logic
-- `Config.swift` - App configuration constants
-- `Makefile` - Build and release commands
-- `Formula/cursorfinder.rb` - Homebrew distribution
+- [`LaserViewModel.swift`](CursorFinder/ViewModels/LaserViewModel.swift) - Core laser display logic
+- [`Config.swift`](CursorFinder/Config/Config.swift) - App configuration constants
+- [`Makefile`](Makefile) - Build and release commands
+- [`Formula/cursorfinder.rb`](Formula/cursorfinder.rb) - Homebrew distribution
 
 ## Release Process
 
@@ -95,14 +95,14 @@ CursorFinder/
 
 ### Code Signing
 - **Currently disabled**: Builds use `CODE_SIGNING_REQUIRED=NO`
-- **Documentation exists**: See `docs/code-signing.md` for future implementation
+- **Documentation exists**: See [`docs/code-signing.md`](docs/code-signing.md) for future implementation
 - **Reason**: Easier distribution for open source project
 
 ### Workflows
-1. `01-ci-test.yml` - Tests on every push
-2. `02-cd-draft-release.yml` - Prepares release notes
-3. `03-cd-release.yml` - Builds and deploys on tag push
-4. `04-cd-auto-release.yml` - Auto-versions and tags on main push
+1. [`01-ci-test.yml`](.github/workflows/01-ci-test.yml) - Tests on every push
+2. [`02-cd-draft-release.yml`](.github/workflows/02-cd-draft-release.yml) - Prepares release notes
+3. [`03-cd-release.yml`](.github/workflows/03-cd-release.yml) - Builds and deploys on tag push
+4. [`04-cd-auto-release.yml`](.github/workflows/04-cd-auto-release.yml) - Auto-versions and tags on main push
 
 ## Guidelines for Changes
 
@@ -130,9 +130,9 @@ CursorFinder/
    git worktree add .worktrees/feature-name -b feature/feature-name
    cd .worktrees/feature-name
    ```
-2. Update `.code-workspace` to include new worktree
+2. Update [`.code-workspace`](CursorFinder.code-workspace) to include new worktree
 3. Implement in appropriate manager/view
-4. Update Config.swift if adding settings
+4. Update [`Config.swift`](CursorFinder/Config/Config.swift) if adding settings
 5. Test with `make dev`
 6. Update README.md features section
 7. Commit with `feat:` prefix

@@ -45,7 +45,7 @@ cd CursorFinder
 
 2. Open the project in Xcode:
 ```bash
-open CursorFinder.xcodeproj
+open [CursorFinder.xcodeproj](CursorFinder.xcodeproj)
 ```
 
 3. Build and run the project (⌘+R)
@@ -88,7 +88,7 @@ Note: Current releases are built without code signing for easier distribution.
 
 Download the latest release from the [Releases page](https://github.com/kawaz/CursorFinder/releases).
 
-1. Download `CursorFinder.zip`
+1. Download [`CursorFinder.zip`](https://github.com/kawaz/CursorFinder/releases/latest/download/CursorFinder.zip)
 2. Unzip and move `CursorFinder.app` to your Applications folder
 3. Open the app (you may need to right-click and select "Open" the first time)
 
@@ -102,7 +102,7 @@ Download the latest release from the [Releases page](https://github.com/kawaz/Cu
 
 ## Configuration
 
-Current configuration options are available in `Config.swift`:
+Current configuration options are available in [`Config.swift`](CursorFinder/Config/Config.swift):
 
 - **Visual Settings**: Line width, gradient colors
 - **Timing**: Inactivity threshold

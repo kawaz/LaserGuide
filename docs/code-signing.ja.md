@@ -72,7 +72,7 @@ base64 -i certificate.p12 | pbcopy
 
 ### 3. ワークフローの更新
 
-リリースワークフロー（`03-cd-release.yml`と`04-cd-auto-release.yml`）を、`CODE_SIGNING_REQUIRED=NO`でビルドする代わりにこれらのシークレットを使用するよう更新する必要があります。
+リリースワークフロー（[`03-cd-release.yml`](../.github/workflows/03-cd-release.yml)と[`04-cd-auto-release.yml`](../.github/workflows/04-cd-auto-release.yml)）を、`CODE_SIGNING_REQUIRED=NO`でビルドする代わりにこれらのシークレットを使用するよう更新する必要があります。
 
 ## セキュリティのベストプラクティス
 
@@ -81,7 +81,7 @@ base64 -i certificate.p12 | pbcopy
 1. **シークレットで`pull_request_target`を使用しない**
 2. **特定のイベントでのみトリガー**:
    - main/masterへの`push`
-   - バージョンタグのプッシュ（`v*.*.*`）- 現在は`04-cd-auto-release.yml`により自動作成
+   - バージョンタグのプッシュ（`v*.*.*`）- 現在は[`04-cd-auto-release.yml`](../.github/workflows/04-cd-auto-release.yml)により自動作成
    - `workflow_dispatch`（手動）
 
 3. **ワークフローの権限を制限**:
@@ -93,17 +93,17 @@ base64 -i certificate.p12 | pbcopy
 ### 現在の設定
 
 ワークフローはセキュア:
-- `01-ci-test.yml`: push/PRで実行（シークレットなし）
-- `02-cd-draft-release.yml`: リリースノート準備（最小権限）
-- `03-cd-release.yml`: メンテナーがプッシュしたバージョンタグでのみ実行
-- `04-cd-auto-release.yml`: コミットメッセージに基づいてバージョンタグを自動作成
+- [`01-ci-test.yml`](../.github/workflows/01-ci-test.yml): push/PRで実行（シークレットなし）
+- [`02-cd-draft-release.yml`](../.github/workflows/02-cd-draft-release.yml): リリースノート準備（最小権限）
+- [`03-cd-release.yml`](../.github/workflows/03-cd-release.yml): メンテナーがプッシュしたバージョンタグでのみ実行
+- [`04-cd-auto-release.yml`](../.github/workflows/04-cd-auto-release.yml): コミットメッセージに基づいてバージョンタグを自動作成
 
 ### 追加の推奨事項
 
 1. ブランチ保護ルールを有効化
 2. ワークフロー変更にPRレビューを要求
 3. 設定 → Actionsで使用状況を監視
-4. `.github/workflows/`用のCODEOWNERSファイルを使用
+4. [`.github/workflows/`](../.github/workflows/)用のCODEOWNERSファイルを使用
 
 ## 未署名ビルドの理由
 
@@ -113,4 +113,4 @@ base64 -i certificate.p12 | pbcopy
 - 年会費不要
 - ユーザーは初回起動時に右クリック → 開くだけで済む
 
-将来的に署名を実装する場合、このドキュメントが完全な設定プロセスを提供します。手動リリースワークフロー（`03-cd-release.yml`）と自動リリースワークフロー（`04-cd-auto-release.yml`）の両方をコード署名を有効にするよう更新する必要があることに注意してください。
+将来的に署名を実装する場合、このドキュメントが完全な設定プロセスを提供します。手動リリースワークフロー（[`03-cd-release.yml`](../.github/workflows/03-cd-release.yml)）と自動リリースワークフロー（[`04-cd-auto-release.yml`](../.github/workflows/04-cd-auto-release.yml)）の両方をコード署名を有効にするよう更新する必要があることに注意してください。

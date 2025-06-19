@@ -69,7 +69,7 @@ make dev
 make build-debug
 
 # Homebrew formulaをローカルでテスト
-brew install --build-from-source Formula/cursorfinder.rb
+brew install --build-from-source [Formula/cursorfinder.rb](Formula/cursorfinder.rb)
 ```
 
 ## プルリクエストのプロセス

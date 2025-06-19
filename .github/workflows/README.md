@@ -2,19 +2,19 @@
 
 このプロジェクトでは以下の3つのワークフローが順番に実行されます：
 
-## 1. CI - Test on Push (01-ci-test.yml)
+## 1. CI - Test on Push ([01-ci-test.yml](01-ci-test.yml))
 **トリガー**: mainブランチへのpush、またはPull Request
 **内容**: 
 - コードのビルドとテスト
 - Universal Binary（Intel/Apple Silicon両対応）の確認
 
-## 2. CD - Draft Release Notes (02-cd-draft-release.yml)  
+## 2. CD - Draft Release Notes ([02-cd-draft-release.yml](02-cd-draft-release.yml))  
 **トリガー**: mainブランチへのpush
 **内容**:
 - 次回リリース用のリリースノート下書きを自動生成
 - release-drafter actionを使用
 
-## 3. CD - Release & Deploy (03-cd-release.yml)
+## 3. CD - Release & Deploy ([03-cd-release.yml](03-cd-release.yml))
 **トリガー**: バージョンタグ（v*.*.*）のpush
 **内容**:
 1. リリースノートの生成
@@ -23,7 +23,7 @@
 4. GitHubリリースの作成とzipアップロード
 5. Homebrew Formulaの自動更新
 
-## 4. CD - Auto Release on Merge (04-cd-auto-release.yml)
+## 4. CD - Auto Release on Merge ([04-cd-auto-release.yml](04-cd-auto-release.yml))
 **トリガー**: mainブランチへのpush（PRマージ時）
 **内容**:
 1. コード変更の有無をチェック（.swift, .m, .plist等）
@@ -32,7 +32,7 @@
    - `feat:` または `BREAKING CHANGE` → minor bump
    - その他のコード変更 → patch bump
 4. 新しいタグを作成してpush
-5. 03-cd-release.ymlが自動的にトリガーされる
+5. [`03-cd-release.yml`](03-cd-release.yml)が自動的にトリガーされる
 
 ## リリースフロー
 

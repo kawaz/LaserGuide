@@ -72,7 +72,7 @@ Add these secrets to your repository:
 
 ### 3. Update Workflow
 
-The release workflows (`03-cd-release.yml` and `04-cd-auto-release.yml`) would need to be updated to use these secrets instead of building with `CODE_SIGNING_REQUIRED=NO`.
+The release workflows ([`03-cd-release.yml`](../.github/workflows/03-cd-release.yml) and [`04-cd-auto-release.yml`](../.github/workflows/04-cd-auto-release.yml)) would need to be updated to use these secrets instead of building with `CODE_SIGNING_REQUIRED=NO`.
 
 ## Security Best Practices
 
@@ -81,7 +81,7 @@ The release workflows (`03-cd-release.yml` and `04-cd-auto-release.yml`) would n
 1. **Never use `pull_request_target`** with secrets
 2. **Only trigger on specific events**:
    - `push` to main/master
-   - Version tag pushes (`v*.*.*`) - now automatically created by `04-cd-auto-release.yml`
+   - Version tag pushes (`v*.*.*`) - now automatically created by [`04-cd-auto-release.yml`](../.github/workflows/04-cd-auto-release.yml)
    - `workflow_dispatch` (manual)
 
 3. **Restrict workflow permissions**:
@@ -93,17 +93,17 @@ The release workflows (`03-cd-release.yml` and `04-cd-auto-release.yml`) would n
 ### Current Configuration
 
 Our workflows are secure:
-- `01-ci-test.yml`: Runs on push/PR (no secrets)
-- `02-cd-draft-release.yml`: Prepares release notes (minimal permissions)
-- `03-cd-release.yml`: Only runs on version tags pushed by maintainers
-- `04-cd-auto-release.yml`: Automatically creates version tags based on commit messages
+- [`01-ci-test.yml`](../.github/workflows/01-ci-test.yml): Runs on push/PR (no secrets)
+- [`02-cd-draft-release.yml`](../.github/workflows/02-cd-draft-release.yml): Prepares release notes (minimal permissions)
+- [`03-cd-release.yml`](../.github/workflows/03-cd-release.yml): Only runs on version tags pushed by maintainers
+- [`04-cd-auto-release.yml`](../.github/workflows/04-cd-auto-release.yml): Automatically creates version tags based on commit messages
 
 ### Additional Recommendations
 
 1. Enable branch protection rules
 2. Require PR reviews for workflow changes
 3. Monitor Actions usage in Settings → Actions
-4. Use CODEOWNERS file for `.github/workflows/`
+4. Use CODEOWNERS file for [`.github/workflows/`](../.github/workflows/)
 
 ## Why Unsigned Builds?
 
@@ -113,4 +113,4 @@ We currently build without signing because:
 - No annual fee required
 - Users just need to right-click → Open on first launch
 
-When/if we implement signing in the future, this documentation provides the complete setup process. Note that both the manual release workflow (`03-cd-release.yml`) and the automatic release workflow (`04-cd-auto-release.yml`) would need to be updated to enable code signing.
+When/if we implement signing in the future, this documentation provides the complete setup process. Note that both the manual release workflow ([`03-cd-release.yml`](../.github/workflows/03-cd-release.yml)) and the automatic release workflow ([`04-cd-auto-release.yml`](../.github/workflows/04-cd-auto-release.yml)) would need to be updated to enable code signing.
