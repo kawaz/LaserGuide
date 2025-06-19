@@ -14,11 +14,13 @@
 
 We use conventional commits for automatic versioning:
 
-- `feat:` - New feature (minor version bump)
-- `fix:` - Bug fix (patch version bump)
-- `docs:` - Documentation only changes
-- `chore:` - Changes that don't affect functionality
-- `BREAKING CHANGE:` - Breaking API change (major version bump)
+- `feat:` - New feature (triggers minor version bump)
+- `fix:` - Bug fix (triggers patch version bump)
+- `docs:` - Documentation only changes (no release)
+- `chore:` - Changes that don't affect functionality (no release)
+- `refactor:` - Code refactoring (triggers patch version bump)
+- `test:` - Adding tests (no release)
+- `BREAKING CHANGE:` - Breaking API change (currently treated as minor)
 
 Examples:
 ```
@@ -26,27 +28,36 @@ feat: add keyboard shortcut to toggle laser visibility
 fix: correct laser position on external displays
 docs: update installation instructions
 chore: update dependencies
+refactor: simplify mouse tracking logic
 ```
+
+**Important**: Only commits that modify code files (.swift, .m, .plist, etc.) will trigger a release.
 
 ### Release Process
 
-1. **Make Changes**: Commit and push your changes to `main`
-2. **Create Version Tag**: Use Make commands to create a new version:
-   ```bash
-   make version-patch  # For bug fixes (0.0.X)
-   make version-minor  # For new features (0.X.0)  
-   make version-major  # For breaking changes (X.0.0)
-   ```
-3. **Push Tag**: This triggers the automated release:
-   ```bash
-   git push origin v0.2.3
-   ```
-4. **Automated Process**: GitHub Actions will:
-   - Create a GitHub release with changelog
-   - Build Universal Binary (unsigned)
-   - Upload `CursorFinder.zip` to release
-   - Update Homebrew formula automatically
-   - Users can `brew upgrade cursorfinder` to get the latest version
+#### Automatic Release (Recommended)
+
+Simply merge your PR to main! The system will automatically:
+
+1. **Detect Code Changes**: Only releases if code files were modified
+2. **Determine Version**: Based on commit messages:
+   - `feat:` commits → minor version bump
+   - Other code changes → patch version bump
+3. **Create Release**: Automatically tags, builds, and publishes
+4. **Update Formula**: Homebrew formula is updated automatically
+
+#### Manual Release (When Needed)
+
+If you need to manually control the version:
+
+```bash
+make version-patch  # For bug fixes (0.0.X)
+make version-minor  # For new features (0.X.0)  
+make version-major  # For breaking changes (X.0.0)
+git push origin v0.2.3
+```
+
+**Note**: The automatic process ensures consistent versioning and prevents accidental releases when only documentation is updated.
 
 ### Testing Locally
 

@@ -23,22 +23,36 @@
 4. GitHubリリースの作成とzipアップロード
 5. Homebrew Formulaの自動更新
 
+## 4. CD - Auto Release on Merge (04-cd-auto-release.yml)
+**トリガー**: mainブランチへのpush（PRマージ時）
+**内容**:
+1. コード変更の有無をチェック（.swift, .m, .plist等）
+2. コード変更がない場合はスキップ
+3. コミットメッセージから自動でバージョンを決定:
+   - `feat:` または `BREAKING CHANGE` → minor bump
+   - その他のコード変更 → patch bump
+4. 新しいタグを作成してpush
+5. 03-cd-release.ymlが自動的にトリガーされる
+
 ## リリースフロー
 
-```bash
-# 1. コード変更をコミット
-git add . && git commit -m "feat: 新機能"
-git push
+### 自動リリース（推奨）
+PRをmainにマージするだけで全て自動化されます：
 
-# 2. バージョンタグを作成
+1. PRを作成してコードレビュー
+2. mainにマージ
+3. 自動的に:
+   - コード変更を検出
+   - バージョンを決定（feat: → minor、その他 → patch）
+   - タグを作成
+   - リリースをビルド・公開
+   - Formulaを更新
+
+### 手動リリース（必要な場合のみ）
+```bash
+# バージョンタグを作成
 make version-patch  # または version-minor/major
 
-# 3. タグをプッシュ（自動でリリース処理が開始）
+# タグをプッシュ
 git push origin v0.2.3
 ```
-
-これで自動的に：
-- リリースが作成される
-- アプリがビルドされる
-- Formulaが更新される
-- ユーザーは `brew upgrade cursorfinder` でアップデート可能
