@@ -47,8 +47,11 @@ To enable automatic code signing in CI/CD:
 ### 1. Export Certificate
 
 ```bash
-# Set a password for the export
-CERT_PASSWORD="your-secure-password"
+# Generate a secure random password
+CERT_PASSWORD="$(openssl rand -base64 48)"
+
+# Save the password (you'll need it for GitHub Secrets)
+echo "Certificate password: $CERT_PASSWORD"
 
 # Export certificate to .p12 file
 security export -k ~/Library/Keychains/login.keychain-db \
