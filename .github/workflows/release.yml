@@ -16,11 +16,15 @@ jobs:
           xcode-version: latest-stable
 
       - name: Import Certificate
-        if: env.APPLE_CERTIFICATE_BASE64 != ''
         env:
           APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
         run: |
+          if [ -z "$APPLE_CERTIFICATE_BASE64" ]; then
+            echo "No certificate provided, skipping import"
+            exit 0
+          fi
+          
           # Create temporary keychain
           KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain-db
           KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
