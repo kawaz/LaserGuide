@@ -1,68 +1,68 @@
 .PHONY: help clean dev build-debug build-release build-zip version-patch version-minor version-major
 
-# 現在のバージョンを取得
+# Get current version
 CURRENT_VERSION := $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.0.0")
 
-# デフォルトターゲット
+# Default target
 help:
-	@echo "使用可能なコマンド:"
-	@echo "  make dev             - デバッグビルド＆起動"
-	@echo "  make build-debug     - デバッグビルドのみ"
-	@echo "  make build-release   - リリースビルド"
-	@echo "  make build-zip       - リリースビルド＆zip作成"
-	@echo "  make clean           - ビルド成果物を削除"
+	@echo "Available commands:"
+	@echo "  make dev             - Build debug version and launch"
+	@echo "  make build-debug     - Build debug version only"
+	@echo "  make build-release   - Build release version"
+	@echo "  make build-zip       - Build release version and create zip"
+	@echo "  make clean           - Remove build artifacts"
 	@echo ""
-	@echo "バージョン管理 (現在: v$(CURRENT_VERSION)):"
-	@echo "  make version-patch - パッチリリース (x.x.Z)"
-	@echo "  make version-minor - マイナーリリース (x.Y.0)"
-	@echo "  make version-major - メジャーリリース (X.0.0)"
+	@echo "Version management (current: v$(CURRENT_VERSION)):"
+	@echo "  make version-patch - Patch release (x.x.Z)"
+	@echo "  make version-minor - Minor release (x.Y.0)"
+	@echo "  make version-major - Major release (X.0.0)"
 
-# クリーンアップ
+# Clean build artifacts
 clean:
-	@echo "🗑️  クリーンアップ中..."
+	@echo "🗑️  Cleaning build artifacts..."
 	@rm -rf build/
 	@rm -f CursorFinder.zip
 	@rm -rf ~/Library/Developer/Xcode/DerivedData/CursorFinder-*
 	@find . -name ".DS_Store" -delete
-	@echo "✅ クリーンアップ完了"
+	@echo "✅ Clean complete"
 
-# 開発用ビルド＆起動
+# Development build and launch
 dev: build-debug
-	@echo "🚀 アプリを起動中..."
+	@echo "🚀 Launching app..."
 	@killall CursorFinder 2>/dev/null || true
 	@open build/Build/Products/Debug/CursorFinder.app
 
-# デバッグビルド
+# Debug build
 build-debug:
-	@echo "🔨 デバッグビルド中..."
+	@echo "🔨 Building debug version..."
 	@xcodebuild -project CursorFinder.xcodeproj \
 		-scheme CursorFinder \
 		-configuration Debug \
 		-derivedDataPath build \
 		build
-	@echo "✅ ビルド完了!"
-	@echo "アプリの場所: $$(pwd)/build/Build/Products/Debug/CursorFinder.app"
+	@echo "✅ Build complete!"
+	@echo "App location: $$(pwd)/build/Build/Products/Debug/CursorFinder.app"
 
-# リリースビルド
+# Release build
 build-release:
-	@echo "📦 リリースビルド中..."
+	@echo "📦 Building release version..."
 	@xcodebuild -project CursorFinder.xcodeproj \
 		-scheme CursorFinder \
 		-configuration Release \
 		-derivedDataPath build \
 		-archivePath build/CursorFinder.xcarchive \
 		archive
-	@echo "✅ リリースビルド完了!"
+	@echo "✅ Release build complete!"
 
-# リリースビルド＆zip作成
+# Release build and create zip
 build-zip: clean build-release
-	@echo "🎁 zipファイルを作成中..."
+	@echo "🎁 Creating zip file..."
 	@cd build/CursorFinder.xcarchive/Products/Applications && \
 		zip -r ../../../../CursorFinder.zip CursorFinder.app
-	@echo "✅ CursorFinder.zip を作成しました"
+	@echo "✅ Created CursorFinder.zip"
 	@ls -lh CursorFinder.zip
 
-# バージョン管理
+# Version management
 version-patch:
 	@$(MAKE) _bump-version TYPE=patch
 
@@ -73,29 +73,29 @@ version-major:
 	@$(MAKE) _bump-version TYPE=major
 
 _bump-version:
-	@# リモートの最新情報を取得
-	@echo "🔄 リモートの最新タグを確認中..."
+	@# Fetch latest remote tags
+	@echo "🔄 Fetching latest tags from remote..."
 	@git fetch --tags --quiet
-	@# 最新のバージョンを取得（ローカルとリモート両方を確認）
+	@# Get latest version (check both local and remote)
 	@LATEST_VERSION=$$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.0.0") && \
 	LATEST_TAG_COMMIT=$$(git rev-list -n 1 v$$LATEST_VERSION 2>/dev/null || echo "") && \
 	HEAD_COMMIT=$$(git rev-parse HEAD) && \
 	if [ "$$LATEST_TAG_COMMIT" = "$$HEAD_COMMIT" ]; then \
-		echo "❌ 現在のコミット(HEAD)は既に v$$LATEST_VERSION でタグ付けされています！" && \
+		echo "❌ Current commit (HEAD) is already tagged as v$$LATEST_VERSION!" && \
 		echo "" && \
-		echo "新しいコミットを作成してからリリースしてください:" && \
-		echo "   1. コードを変更" && \
+		echo "Please create a new commit before releasing:" && \
+		echo "   1. Make code changes" && \
 		echo "   2. git add . && git commit -m 'your changes'" && \
 		echo "   3. git push" && \
 		echo "   4. make version-patch/minor/major" && \
 		exit 1; \
 	fi && \
 	if [ -n "$$(git status --porcelain)" ]; then \
-		echo "❌ 未コミットの変更があります！" && \
+		echo "❌ Uncommitted changes detected!" && \
 		echo "" && \
 		git status --short && \
 		echo "" && \
-		echo "先にコミットしてください:" && \
+		echo "Please commit your changes first:" && \
 		echo "   git add ." && \
 		echo "   git commit -m 'your message'" && \
 		exit 1; \
@@ -106,22 +106,22 @@ _bump-version:
 		minor) NEW_VERSION="$${MAJOR}.$$((MINOR + 1)).0" ;; \
 		patch) NEW_VERSION="$${MAJOR}.$${MINOR}.$$((PATCH + 1))" ;; \
 	esac && \
-	echo "📊 現在のバージョン: v$$LATEST_VERSION → 新バージョン: v$$NEW_VERSION" && \
+	echo "📊 Current version: v$$LATEST_VERSION → New version: v$$NEW_VERSION" && \
 	if git tag -l "v$$NEW_VERSION" | grep -q . || git ls-remote --tags origin "refs/tags/v$$NEW_VERSION" | grep -q .; then \
-		echo "❌ タグ v$$NEW_VERSION は既に存在します！" && \
+		echo "❌ Tag v$$NEW_VERSION already exists!" && \
 		echo "" && \
-		echo "最新のタグを確認してください:" && \
+		echo "Please check latest tags:" && \
 		echo "   git fetch --tags" && \
 		echo "   git tag -l | sort -V | tail -5" && \
 		exit 1; \
 	fi && \
 	git tag "v$$NEW_VERSION" && \
-	echo "✅ タグを作成しました: v$$NEW_VERSION" && \
+	echo "✅ Created tag: v$$NEW_VERSION" && \
 	echo "" && \
-	echo "📤 リリースするには以下を実行:" && \
+	echo "📤 To release, run:" && \
 	echo "   git push origin v$$NEW_VERSION" && \
 	echo "" && \
-	echo "これでGitHub Actionsが自動的に:" && \
-	echo "  - リリースを作成" && \
-	echo "  - アプリをビルド" && \
-	echo "  - Formulaを更新"
+	echo "GitHub Actions will automatically:" && \
+	echo "  - Create release" && \
+	echo "  - Build app" && \
+	echo "  - Update Formula"
