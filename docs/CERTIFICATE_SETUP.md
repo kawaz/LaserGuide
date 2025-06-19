@@ -1,5 +1,7 @@
 # Certificate Setup Guide
 
+**Note**: Current automated releases are built without code signing. This guide is for future reference when code signing is implemented.
+
 ## Creating Apple ID Without Apple Device
 
 You can create an Apple ID from any web browser:

@@ -2,6 +2,8 @@
 
 This document describes how to set up code signing for CursorFinder releases.
 
+**Note**: Current automated releases are built without code signing (`CODE_SIGNING_REQUIRED=NO`) for easier distribution. This documentation is for future implementation when code signing is re-enabled.
+
 ## Local Signing
 
 For local builds, you can sign with your Apple Development certificate:
@@ -37,7 +39,7 @@ Add the following secrets to your repository:
 
 ### 3. Update Release Workflow
 
-The release workflow will automatically use these secrets to sign the app.
+The release workflow (`03-cd-release.yml`) currently builds without signing. To enable signing, the workflow would need to be updated to use these secrets.
 
 ## Verification
 

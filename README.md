@@ -34,7 +34,6 @@ brew tap kawaz/cursorfinder https://github.com/kawaz/CursorFinder
 brew install cursorfinder
 ```
 
-Note: Homebrew formula will be available after the first release is published.
 
 ### Build from Source (Xcode)
 
@@ -59,33 +58,31 @@ git clone https://github.com/kawaz/CursorFinder.git
 cd CursorFinder
 ```
 
-2. Build the app using xcodebuild:
+2. Build and run using Make:
+```bash
+# Build and run debug version
+make dev
+
+# Build only (debug)
+make build-debug
+
+# Build release version
+make build-release
+
+# Build release and create zip
+make build-zip
+```
+
+3. Manual build with xcodebuild:
 ```bash
 # Build for Debug
 xcodebuild -scheme CursorFinder -configuration Debug build
 
-# Build for Release
+# Build for Release  
 xcodebuild -scheme CursorFinder -configuration Release build
 ```
 
-3. The built app will be located at:
-```bash
-# Debug build
-~/Library/Developer/Xcode/DerivedData/CursorFinder-*/Build/Products/Debug/CursorFinder.app
-
-# Release build
-~/Library/Developer/Xcode/DerivedData/CursorFinder-*/Build/Products/Release/CursorFinder.app
-```
-
-4. Run the app:
-```bash
-# Find and run the Debug build
-open ~/Library/Developer/Xcode/DerivedData/CursorFinder-*/Build/Products/Debug/CursorFinder.app
-
-# Or copy to Applications folder (Release build)
-cp -r ~/Library/Developer/Xcode/DerivedData/CursorFinder-*/Build/Products/Release/CursorFinder.app /Applications/
-open /Applications/CursorFinder.app
-```
+Note: Current releases are built without code signing for easier distribution.
 
 ### Pre-built Binary
 
@@ -118,9 +115,42 @@ CursorFinder requires accessibility permissions to track mouse movements globall
 - Only tracks mouse position for display purposes
 - Runs entirely locally on your machine
 
+## Development
+
+### Available Make Commands
+
+```bash
+make               # Show available commands
+make dev           # Build and run debug version
+make build-debug   # Build debug version only
+make build-release # Build release version
+make build-zip     # Build release and create zip
+make clean         # Clean build artifacts
+```
+
+### Release Process
+
+1. Make your changes and commit them
+2. Create a version tag:
+   ```bash
+   make version-patch  # For bug fixes (0.0.X)
+   make version-minor  # For new features (0.X.0)
+   make version-major  # For breaking changes (X.0.0)
+   ```
+3. Push the tag to trigger automated release:
+   ```bash
+   git push origin v0.2.3
+   ```
+
+The GitHub Actions workflow will automatically:
+- Create a GitHub release
+- Build the app
+- Upload the zip file
+- Update the Homebrew formula
+
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## License
 

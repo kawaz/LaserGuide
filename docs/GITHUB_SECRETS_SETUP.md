@@ -1,4 +1,6 @@
-# GitHub Secretsの設定手順
+# GitHub Secrets Setup Guide
+
+**Note**: These secrets are not currently used as automated builds are configured without code signing. This documentation is for future implementation when code signing is re-enabled.
 
 ## 1. 証明書のエクスポート
 

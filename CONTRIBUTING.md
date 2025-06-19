@@ -30,19 +30,32 @@ chore: update dependencies
 
 ### Release Process
 
-1. **Automatic Release Draft**: Every push to `main` updates a draft release
-2. **Version Bumping**: Based on commit messages
-3. **Publishing**: When you publish the draft release:
-   - CI builds Universal Binary
-   - Uploads `CursorFinder.zip` to release
-   - Updates Homebrew formula automatically
-   - Users can `brew upgrade` to get the latest version
+1. **Make Changes**: Commit and push your changes to `main`
+2. **Create Version Tag**: Use Make commands to create a new version:
+   ```bash
+   make version-patch  # For bug fixes (0.0.X)
+   make version-minor  # For new features (0.X.0)  
+   make version-major  # For breaking changes (X.0.0)
+   ```
+3. **Push Tag**: This triggers the automated release:
+   ```bash
+   git push origin v0.2.3
+   ```
+4. **Automated Process**: GitHub Actions will:
+   - Create a GitHub release with changelog
+   - Build Universal Binary (unsigned)
+   - Upload `CursorFinder.zip` to release
+   - Update Homebrew formula automatically
+   - Users can `brew upgrade cursorfinder` to get the latest version
 
 ### Testing Locally
 
 ```bash
-# Build and test
-xcodebuild -scheme CursorFinder -configuration Debug build
+# Build and run debug version
+make dev
+
+# Build only
+make build-debug
 
 # Test Homebrew formula locally
 brew install --build-from-source Formula/cursorfinder.rb

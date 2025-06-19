@@ -19,8 +19,13 @@
 ## Current Safe Configuration
 
 Our release workflow only runs on:
-- `release: types: [published]` - Only when maintainers publish a release
-- No external PRs can trigger certificate signing
+- `push: tags: ['v*.*.*']` - Only when maintainers push version tags
+- No external PRs can trigger the release process
+
+The workflow structure:
+1. `01-ci-test.yml` - Runs on every push and PR
+2. `02-cd-draft-release.yml` - Prepares release notes on main branch pushes
+3. `03-cd-release.yml` - Creates release when version tags are pushed
 
 ## Additional Recommendations
 
