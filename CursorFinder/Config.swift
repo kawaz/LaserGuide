@@ -7,6 +7,9 @@ struct Config {
         static let laserLineWidth: CGFloat = 2.0
         static let laserOpacity: Double = 1.0
         
+        // Animation duration for laser fade effect
+        static let fadeAnimationDuration: TimeInterval = 0.2
+        
         // Gradient colors for laser effect
         static let gradientStops: [Gradient.Stop] = [
             .init(color: Color.blue.opacity(1.0), location: 0.0),
