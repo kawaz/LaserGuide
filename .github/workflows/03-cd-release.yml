@@ -83,6 +83,11 @@ jobs:
           VERSION="${VERSION#v}"  # v接頭辞を削除
           SHA256=$(shasum -a 256 CursorFinder-${VERSION}.zip | awk '{print $1}')
           
+          # mainブランチに切り替え
+          git fetch origin main
+          git checkout main
+          git pull origin main
+          
           # Formulaを更新
           sed -i '' \
             -e "s|download/v[0-9.]*/CursorFinder\.zip|download/v${VERSION}/CursorFinder-${VERSION}.zip|" \
@@ -94,4 +99,4 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Formula/cursorfinder.rb
           git commit -m "Update Formula to v${VERSION}"
-          git push
+          git push origin main
