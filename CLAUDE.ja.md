@@ -84,8 +84,9 @@ CursorFinder/
 ### 自動リリース
 1. mainにプッシュされたコード変更が自動的に検出される
 2. コミットメッセージによりバージョンが決定される
-3. タグが自動的に作成されプッシュされる
-4. リリースワークフローがビルドして公開
+3. タグが自動的に作成される
+4. アプリがビルドされ、バージョン付きzipファイルでリリースされる
+5. Homebrew Formulaが自動的に更新される
 
 ### 手動制御
 - `make version-patch/minor/major` - 手動バージョン制御
@@ -101,10 +102,8 @@ CursorFinder/
 ### ワークフロー
 1. [`01-ci-test.yml`](.github/workflows/01-ci-test.yml) - 毎pushでテスト
 2. [`02-cd-draft-release.yml`](.github/workflows/02-cd-draft-release.yml) - リリースノート準備
-3. [`03-cd-release.yml`](.github/workflows/03-cd-release.yml) - タグpushでビルドとデプロイ
-4. [`04-cd-auto-release.yml`](.github/workflows/04-cd-auto-release.yml) - mainへのpushで自動バージョニングとタグ付け
-
-**注意**: ワークフロー4で作成されたタグはGitHubのセキュリティ制限によりワークフロー3をトリガーしません。現在は自動バージョニング後、手動でタグをプッシュするか手動リリースを待つ必要があります。
+3. [`03-cd-release.yml`](.github/workflows/03-cd-release.yml) - タグpushでビルドとデプロイ（手動タグのみ）
+4. [`04-cd-auto-release-and-deploy.yml`](.github/workflows/04-cd-auto-release-and-deploy.yml) - mainへのpushで自動バージョニング、ビルド、デプロイ
 
 ## 変更のガイドライン
 

@@ -1,6 +1,6 @@
 # GitHub Actionsワークフロー
 
-このプロジェクトでは以下の4つのワークフローが順番に実行されます：
+このプロジェクトでは以下の4つのワークフローが実行されます：
 
 ## 1. CI - Test on Push ([01-ci-test.yml](01-ci-test.yml))
 **トリガー**: mainブランチへのpush、またはプルリクエスト
@@ -23,7 +23,7 @@
 4. GitHubリリースの作成とzipアップロード
 5. Homebrew Formulaの自動更新
 
-## 4. CD - Auto Release on Merge ([04-cd-auto-release.yml](04-cd-auto-release.yml))
+## 4. CD - Auto Release and Deploy ([04-cd-auto-release-and-deploy.yml](04-cd-auto-release-and-deploy.yml))
 **トリガー**: mainブランチへのpush（PRマージ時）
 **内容**:
 1. コード変更の有無をチェック（.swift、.m、.plist等）
@@ -31,8 +31,11 @@
 3. コミットメッセージから自動でバージョンを決定:
    - `feat:`または`BREAKING CHANGE` → マイナーバージョンアップ
    - その他のコード変更 → パッチバージョンアップ
-4. 新しいタグを作成してpush
-5. [`03-cd-release.yml`](03-cd-release.yml)が自動的にトリガーされる
+4. 新しいタグを作成
+5. アプリをビルド（ユニバーサルバイナリ）
+6. zipファイルを作成（バージョン付き名）
+7. GitHubリリースを作成してzipをアップロード
+8. Homebrew Formulaを自動更新
 
 ## リリースフロー
 

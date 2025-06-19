@@ -84,8 +84,9 @@ CursorFinder/
 ### Automated Releases
 1. Code changes pushed to main are automatically detected
 2. Version is determined by commit messages
-3. Tag is created and pushed automatically
-4. Release workflow builds and publishes
+3. Tag is created automatically
+4. App is built and released with versioned zip file
+5. Homebrew Formula is updated automatically
 
 ### Manual Controls
 - `make version-patch/minor/major` - Manual version control
@@ -101,10 +102,8 @@ CursorFinder/
 ### Workflows
 1. [`01-ci-test.yml`](.github/workflows/01-ci-test.yml) - Tests on every push
 2. [`02-cd-draft-release.yml`](.github/workflows/02-cd-draft-release.yml) - Prepares release notes
-3. [`03-cd-release.yml`](.github/workflows/03-cd-release.yml) - Builds and deploys on tag push
-4. [`04-cd-auto-release.yml`](.github/workflows/04-cd-auto-release.yml) - Auto-versions and tags on main push
-
-**Note**: Tags created by workflow 4 don't trigger workflow 3 due to GitHub security. Currently, after auto-versioning, manually push the tag or wait for manual release.
+3. [`03-cd-release.yml`](.github/workflows/03-cd-release.yml) - Builds and deploys on tag push (manual tags only)
+4. [`04-cd-auto-release-and-deploy.yml`](.github/workflows/04-cd-auto-release-and-deploy.yml) - Auto-versions, builds, and deploys on main push
 
 ## Guidelines for Changes
 
