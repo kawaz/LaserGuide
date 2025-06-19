@@ -130,23 +130,7 @@ make clean         # Clean build artifacts
 
 ### Release Process
 
-1. Make your changes and commit them
-2. Create a version tag:
-   ```bash
-   make version-patch  # For bug fixes (0.0.X)
-   make version-minor  # For new features (0.X.0)
-   make version-major  # For breaking changes (X.0.0)
-   ```
-3. Push the tag to trigger automated release:
-   ```bash
-   git push origin v0.2.3
-   ```
-
-The GitHub Actions workflow will automatically:
-- Create a GitHub release
-- Build the app
-- Upload the zip file
-- Update the Homebrew formula
+For detailed release instructions, see [CONTRIBUTING.md](CONTRIBUTING.md#release-process).
 
 ## Contributing
 
