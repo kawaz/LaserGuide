@@ -65,6 +65,16 @@ _bump-version:
 		patch) NEW_VERSION="$${MAJOR}.$${MINOR}.$$((PATCH + 1))" ;; \
 	esac && \
 	echo "🏷️  新しいバージョン: v$$NEW_VERSION" && \
+	if git tag -l "v$$NEW_VERSION" | grep -q .; then \
+		echo "❌ タグ v$$NEW_VERSION は既に存在します！" && \
+		echo "" && \
+		echo "リモートにプッシュされていない場合:" && \
+		echo "   git push origin v$$NEW_VERSION" && \
+		echo "" && \
+		echo "タグを削除してやり直す場合:" && \
+		echo "   git tag -d v$$NEW_VERSION" && \
+		exit 1; \
+	fi && \
 	git tag "v$$NEW_VERSION" && \
 	echo "✅ タグを作成しました: v$$NEW_VERSION" && \
 	echo "" && \
