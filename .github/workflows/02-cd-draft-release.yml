@@ -1,4 +1,4 @@
-name: CI - Draft Release Notes
+name: CD - Draft Release Notes
 
 on:
   push:

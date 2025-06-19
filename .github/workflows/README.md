@@ -8,7 +8,7 @@
 - コードのビルドとテスト
 - Universal Binary（Intel/Apple Silicon両対応）の確認
 
-## 2. CI - Draft Release Notes (02-ci-draft-release.yml)  
+## 2. CD - Draft Release Notes (02-cd-draft-release.yml)  
 **トリガー**: mainブランチへのpush
 **内容**:
 - 次回リリース用のリリースノート下書きを自動生成
