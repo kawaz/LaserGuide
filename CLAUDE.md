@@ -120,6 +120,7 @@ CursorFinder/
 1. Verify documentation is updated
 2. Check that workflows still function
 3. Ensure Makefile targets work correctly
+- **Always verify the necessity of deleting unnecessary files and updating documents after refactoring**
 
 ## Common Tasks
 
@@ -162,7 +163,9 @@ CursorFinder/
 - **Branch discipline**: Always use worktrees for feature branches, never switch in main directory
 - **Human approval**: Get confirmation before merging significant changes to main
 - **Workspace maintenance**: Update `.code-workspace` when creating/removing worktrees
-- **Cleanup**: Remove worktrees after features are merged
+- **Cleanup after refactoring**: Always check for files that become unnecessary after refactoring and remove them
+- **Documentation consistency**: Update all affected documentation when making changes
+- **Remove worktrees**: Delete worktrees after features are merged
 - **Documentation reviews**: Regularly check that docs match implementation
 - **Workflow updates**: Test workflow changes carefully
 - **Breaking changes**: Currently treated as minor version bumps
