@@ -1,0 +1,48 @@
+name: Create Release on Version Tag
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 全履歴を取得（CHANGELOG生成用）
+
+      - name: Generate Release Notes
+        id: changelog
+        run: |
+          # 前のタグを取得
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 $(git rev-list --tags --skip=1 --max-count=1) 2>/dev/null || echo "")
+          
+          if [ -z "$PREVIOUS_TAG" ]; then
+            # 初回リリース
+            COMMITS=$(git log --pretty=format:"- %s" --reverse)
+          else
+            # 前回のタグからの差分
+            COMMITS=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s")
+          fi
+          
+          # リリースノート作成
+          echo "## What's Changed" > release_notes.md
+          echo "" >> release_notes.md
+          echo "$COMMITS" >> release_notes.md
+          
+          # GitHubのリリースページURLを追加
+          echo "" >> release_notes.md
+          echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...${{ github.ref_name }}" >> release_notes.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.md
+          generate_release_notes: false
+          draft: false
+          prerelease: false
