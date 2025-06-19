@@ -78,7 +78,6 @@ _bump-version:
 	@git fetch --tags --quiet
 	@# 最新のバージョンを取得（ローカルとリモート両方を確認）
 	@LATEST_VERSION=$$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.0.0") && \
-	# 未コミットの変更をチェック
 	if [ -n "$$(git status --porcelain)" ]; then \
 		echo "❌ 未コミットの変更があります！" && \
 		echo "" && \
@@ -89,7 +88,6 @@ _bump-version:
 		echo "   git commit -m 'your message'" && \
 		exit 1; \
 	fi && \
-	# バージョンを分解
 	IFS='.' read -r MAJOR MINOR PATCH <<< "$$LATEST_VERSION" && \
 	case $(TYPE) in \
 		major) NEW_VERSION="$$((MAJOR + 1)).0.0" ;; \
@@ -97,7 +95,6 @@ _bump-version:
 		patch) NEW_VERSION="$${MAJOR}.$${MINOR}.$$((PATCH + 1))" ;; \
 	esac && \
 	echo "📊 現在のバージョン: v$$LATEST_VERSION → 新バージョン: v$$NEW_VERSION" && \
-	# ローカルとリモートのタグを確認
 	if git tag -l "v$$NEW_VERSION" | grep -q . || git ls-remote --tags origin "refs/tags/v$$NEW_VERSION" | grep -q .; then \
 		echo "❌ タグ v$$NEW_VERSION は既に存在します！" && \
 		echo "" && \
