@@ -101,9 +101,7 @@ CursorFinder/
 
 ### Workflows
 1. [`01-ci-test.yml`](.github/workflows/01-ci-test.yml) - Tests on every push
-2. [`02-cd-draft-release.yml`](.github/workflows/02-cd-draft-release.yml) - Prepares release notes
-3. [`03-cd-release.yml`](.github/workflows/03-cd-release.yml) - Builds and deploys on tag push (manual tags only)
-4. [`04-cd-auto-release-and-deploy.yml`](.github/workflows/04-cd-auto-release-and-deploy.yml) - Auto-versions, builds, and deploys on main push
+2. [`04-cd-auto-release-and-deploy.yml`](.github/workflows/04-cd-auto-release-and-deploy.yml) - Auto-versions, builds, and deploys on main push
 
 ## Guidelines for Changes
 

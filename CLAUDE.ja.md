@@ -101,9 +101,7 @@ CursorFinder/
 
 ### ワークフロー
 1. [`01-ci-test.yml`](.github/workflows/01-ci-test.yml) - 毎pushでテスト
-2. [`02-cd-draft-release.yml`](.github/workflows/02-cd-draft-release.yml) - リリースノート準備
-3. [`03-cd-release.yml`](.github/workflows/03-cd-release.yml) - タグpushでビルドとデプロイ（手動タグのみ）
-4. [`04-cd-auto-release-and-deploy.yml`](.github/workflows/04-cd-auto-release-and-deploy.yml) - mainへのpushで自動バージョニング、ビルド、デプロイ
+2. [`04-cd-auto-release-and-deploy.yml`](.github/workflows/04-cd-auto-release-and-deploy.yml) - mainへのpushで自動バージョニング、ビルド、デプロイ
 
 ## 変更のガイドライン
 
