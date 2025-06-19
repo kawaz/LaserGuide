@@ -104,6 +104,8 @@ CursorFinder/
 3. [`03-cd-release.yml`](.github/workflows/03-cd-release.yml) - タグpushでビルドとデプロイ
 4. [`04-cd-auto-release.yml`](.github/workflows/04-cd-auto-release.yml) - mainへのpushで自動バージョニングとタグ付け
 
+**注意**: ワークフロー4で作成されたタグはGitHubのセキュリティ制限によりワークフロー3をトリガーしません。現在は自動バージョニング後、手動でタグをプッシュするか手動リリースを待つ必要があります。
+
 ## 変更のガイドライン
 
 ### 変更前

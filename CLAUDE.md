@@ -104,6 +104,8 @@ CursorFinder/
 3. [`03-cd-release.yml`](.github/workflows/03-cd-release.yml) - Builds and deploys on tag push
 4. [`04-cd-auto-release.yml`](.github/workflows/04-cd-auto-release.yml) - Auto-versions and tags on main push
 
+**Note**: Tags created by workflow 4 don't trigger workflow 3 due to GitHub security. Currently, after auto-versioning, manually push the tag or wait for manual release.
+
 ## Guidelines for Changes
 
 ### Before Making Changes

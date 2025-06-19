@@ -1,5 +1,11 @@
 name: CD - Auto Release on Merge
 
+# Note: Tags created by this workflow do not trigger other workflows due to GitHub Actions security.
+# To work around this, either:
+# 1. Use a Personal Access Token (PAT) instead of GITHUB_TOKEN
+# 2. Manually push the tag after it's created
+# Currently, the release workflow (03-cd-release.yml) must be triggered manually or by pushing tags from outside Actions.
+
 on:
   push:
     branches:
