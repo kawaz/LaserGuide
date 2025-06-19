@@ -43,6 +43,9 @@ struct Config {
         
         // Limit update frequency when mouse is not moving
         static let idleUpdateInterval: TimeInterval = 1.0 / 30.0 // 30 FPS when idle
+        
+        // Enable high-performance rendering for better responsiveness
+        static let enableHighPerformanceMode = true
     }
     
 }
