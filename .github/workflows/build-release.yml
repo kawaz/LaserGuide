@@ -1,4 +1,4 @@
-name: Release Build
+name: Build Release
 
 on:
   release:
@@ -25,18 +25,18 @@ jobs:
             echo "No certificate provided, skipping import"
             exit 0
           fi
-
+          
           KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain-db
           KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
-
+          
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-
+          
           echo "$CERT_BASE64" | base64 -d -o certificate.p12
           security import certificate.p12 -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH"
-
+          
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
       - name: Build Universal Binary
@@ -88,10 +88,10 @@ jobs:
       - name: Update Homebrew Formula
         run: |
           VERSION="${{ github.event.release.tag_name }}"
-
+          
           sed -i '' "s|url \".*\"|url \"https://github.com/kawaz/CursorFinder/releases/download/${VERSION}/CursorFinder.zip\"|" Formula/cursorfinder.rb
           sed -i '' "s|sha256 \".*\"|sha256 \"${{ steps.sha256.outputs.sha256 }}\"|" Formula/cursorfinder.rb
-
+          
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add Formula/cursorfinder.rb
