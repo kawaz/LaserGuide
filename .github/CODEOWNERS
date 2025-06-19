@@ -1,0 +1,5 @@
+# GitHub Workflows require owner approval
+/.github/workflows/ @kawaz
+
+# Formula changes require owner approval  
+/Formula/ @kawaz
