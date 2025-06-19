@@ -15,17 +15,8 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Check if Secrets are available
-        id: check_secrets
-        run: |
-          if [ -n "${{ secrets.APPLE_CERTIFICATE_BASE64 }}" ]; then
-            echo "has_secrets=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_secrets=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Import Certificate
-        if: steps.check_secrets.outputs.has_secrets == 'true'
+        if: env.APPLE_CERTIFICATE_BASE64 != ''
         env:
           APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
