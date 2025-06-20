@@ -100,10 +100,10 @@ jobs:
           
           if [ -z "$PREVIOUS_TAG" ]; then
             # First release
-            COMMITS=$(git log --pretty=format:"- %s" --reverse | grep -v "^Update Formula to v")
+            COMMITS=$(git log --pretty=format:"- %s" --reverse | grep -v "^Update Cask to v")
           else
-            # Changes since previous tag (exclude Formula update commits)
-            COMMITS=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s" | grep -v "^Update Formula to v")
+            # Changes since previous tag (exclude Cask update commits)
+            COMMITS=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s" | grep -v "^Update Cask to v")
           fi
           
           # Create release notes
@@ -163,7 +163,7 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Update Formula
+      - name: Update Cask
         if: steps.check_changes.outputs.skip_release != 'true'
         run: |
           # Get version and SHA256
@@ -175,15 +175,15 @@ jobs:
           git checkout main
           git pull origin main
           
-          # Update Formula
+          # Update Cask
           sed -i '' \
-            -e "s|download/v[0-9.]*/LaserGuide-[0-9.]*\.zip|download/v${VERSION}/LaserGuide-${VERSION}.zip|" \
+            -e "s|version \"[0-9.]*\"|version \"${VERSION}\"|" \
             -e "s|sha256 \"[a-f0-9]*\"|sha256 \"${SHA256}\"|" \
-            Formula/laserguide.rb
+            Casks/laserguide.rb
           
           # Commit and push changes
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Formula/laserguide.rb
-          git commit -m "Update Formula to v${VERSION}"
+          git add Casks/laserguide.rb
+          git commit -m "Update Cask to v${VERSION}"
           git push origin main
