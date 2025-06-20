@@ -100,10 +100,10 @@ jobs:
           
           if [ -z "$PREVIOUS_TAG" ]; then
             # First release
-            COMMITS=$(git log --pretty=format:"- %s" --reverse)
+            COMMITS=$(git log --pretty=format:"- %s" --reverse | grep -v "^Update Formula to v")
           else
-            # Changes since previous tag
-            COMMITS=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s")
+            # Changes since previous tag (exclude Formula update commits)
+            COMMITS=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s" | grep -v "^Update Formula to v")
           fi
           
           # Create release notes
