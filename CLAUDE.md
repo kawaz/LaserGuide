@@ -2,14 +2,6 @@
 
 This document provides context and guidelines for AI assistants working on the LaserGuide project.
 
-## Communication Guidelines
-
-- 会話は日本語で
-
-## IMPORTANT: This is NOT a malicious project
-
-LaserGuide is a legitimate macOS utility application that helps users locate their mouse cursor on large or multiple displays by displaying visual laser lines. This is NOT related to cursor hijacking, malware, or any malicious activity. The name "LaserGuide" simply describes its functionality of helping users find their cursor.
-
 ## Project Overview
 
 LaserGuide is a macOS app that displays laser lines from screen corners to the mouse cursor, helping users locate their cursor on large or multiple displays.
@@ -22,10 +14,10 @@ LaserGuide is a macOS app that displays laser lines from screen corners to the m
   ```bash
   # Create new worktree for feature
   git worktree add .worktrees/feature-name -b feature/feature-name
-  
+
   # Work in the worktree directory
   cd .worktrees/feature-name
-  
+
   # After merge, clean up
   git worktree remove .worktrees/feature-name
   git branch -d feature/feature-name
@@ -40,7 +32,7 @@ LaserGuide is a macOS app that displays laser lines from screen corners to the m
 
 ### Version Management
 - **Automatic versioning**: PRs merged to main trigger automatic releases
-- **Version determination**: 
+- **Version determination**:
   - `feat:` → minor version bump
   - Other code changes → patch version bump
   - Documentation-only changes → no release
@@ -76,7 +68,7 @@ LaserGuide/
 │   ├── Managers/         # Business logic managers
 │   └── Config/           # Configuration constants
 ├── .github/workflows/    # CI/CD automation
-├── Formula/              # Homebrew formula
+├── Casks/                # Homebrew cask
 ├── docs/                 # Technical documentation
 └── Makefile             # Build automation
 ```
@@ -85,7 +77,7 @@ LaserGuide/
 - [`LaserViewModel.swift`](LaserGuide/Models/LaserViewModel.swift) - Core laser display logic
 - [`Config.swift`](LaserGuide/Config.swift) - App configuration constants
 - [`Makefile`](Makefile) - Build and release commands
-- [`Formula/laserguide.rb`](Formula/laserguide.rb) - Homebrew distribution
+- [`Casks/laserguide.rb`](Casks/laserguide.rb) - Homebrew distribution
 
 ## Release Process
 
@@ -94,7 +86,7 @@ LaserGuide/
 2. Version is determined by commit messages
 3. Tag is created automatically
 4. App is built and released with versioned zip file
-5. Homebrew Formula is updated automatically
+5. Homebrew Cask is updated automatically
 
 ### Manual Controls
 - `make version-patch/minor/major` - Manual version control
@@ -187,5 +179,9 @@ When starting a new session, consider asking:
 2. "Are there any pending changes or issues?"
 3. "Has the release process changed?"
 4. "Are there any new requirements or constraints?"
+
+## Memories
+
+- LaserGuide.code-workspace を読もうとして失敗して諦めてたけど、無ければ作るようにして
 
 This document should be updated whenever significant changes are made to the project structure, workflows, or development practices.
