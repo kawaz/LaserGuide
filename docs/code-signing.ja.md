@@ -31,13 +31,13 @@
 
 ローカルビルドの場合:
 ```bash
-codesign --force --sign "Apple Development: YOUR_EMAIL (TEAM_ID)" --deep CursorFinder.app
+codesign --force --sign "Apple Development: YOUR_EMAIL (TEAM_ID)" --deep LaserGuide.app
 ```
 
 検証方法:
 ```bash
-codesign -dv --verbose=4 CursorFinder.app
-spctl -a -vvv -t install CursorFinder.app
+codesign -dv --verbose=4 LaserGuide.app
+spctl -a -vvv -t install LaserGuide.app
 ```
 
 ## GitHub Actionsの設定

@@ -1,8 +1,8 @@
-// CursorFinderApp.swift
+// LaserGuideApp.swift
 import SwiftUI
 
 @main
-struct CursorFinderApp: App {
+struct LaserGuideApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     var body: some Scene {

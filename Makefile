@@ -21,46 +21,46 @@ help:
 clean:
 	@echo "🗑️  Cleaning build artifacts..."
 	@rm -rf build/
-	@rm -f CursorFinder.zip
-	@rm -rf ~/Library/Developer/Xcode/DerivedData/CursorFinder-*
+	@rm -f LaserGuide.zip
+	@rm -rf ~/Library/Developer/Xcode/DerivedData/LaserGuide-*
 	@find . -name ".DS_Store" -delete
 	@echo "✅ Clean complete"
 
 # Development build and launch
 dev: build-debug
 	@echo "🚀 Launching app..."
-	@killall CursorFinder 2>/dev/null || true
-	@open build/Build/Products/Debug/CursorFinder.app
+	@killall LaserGuide 2>/dev/null || true
+	@open build/Build/Products/Debug/LaserGuide.app
 
 # Debug build
 build-debug:
 	@echo "🔨 Building debug version..."
-	@xcodebuild -project CursorFinder.xcodeproj \
-		-scheme CursorFinder \
+	@xcodebuild -project LaserGuide.xcodeproj \
+		-scheme LaserGuide \
 		-configuration Debug \
 		-derivedDataPath build \
 		build
 	@echo "✅ Build complete!"
-	@echo "App location: $$(pwd)/build/Build/Products/Debug/CursorFinder.app"
+	@echo "App location: $$(pwd)/build/Build/Products/Debug/LaserGuide.app"
 
 # Release build
 build-release:
 	@echo "📦 Building release version..."
-	@xcodebuild -project CursorFinder.xcodeproj \
-		-scheme CursorFinder \
+	@xcodebuild -project LaserGuide.xcodeproj \
+		-scheme LaserGuide \
 		-configuration Release \
 		-derivedDataPath build \
-		-archivePath build/CursorFinder.xcarchive \
+		-archivePath build/LaserGuide.xcarchive \
 		archive
 	@echo "✅ Release build complete!"
 
 # Release build and create zip
 build-zip: clean build-release
 	@echo "🎁 Creating zip file..."
-	@cd build/CursorFinder.xcarchive/Products/Applications && \
-		zip -r ../../../../CursorFinder.zip CursorFinder.app
-	@echo "✅ Created CursorFinder.zip"
-	@ls -lh CursorFinder.zip
+	@cd build/LaserGuide.xcarchive/Products/Applications && \
+		zip -r ../../../../LaserGuide.zip LaserGuide.app
+	@echo "✅ Created LaserGuide.zip"
+	@ls -lh LaserGuide.zip
 
 # Version management
 version-patch:

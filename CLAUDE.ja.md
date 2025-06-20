@@ -1,10 +1,10 @@
-# CursorFinder AIアシスタントガイドライン
+# LaserGuide AIアシスタントガイドライン
 
-このドキュメントはCursorFinderプロジェクトで作業するAIアシスタント向けのコンテキストとガイドラインを提供します。
+このドキュメントはLaserGuideプロジェクトで作業するAIアシスタント向けのコンテキストとガイドラインを提供します。
 
 ## プロジェクト概要
 
-CursorFinderは、大画面や複数ディスプレイでマウスカーソルを見つけやすくするmacOSアプリです。画面の四隅からマウスカーソルに向かってレーザーラインを表示します。
+LaserGuideは、大画面や複数ディスプレイでマウスカーソルを見つけやすくするmacOSアプリです。画面の四隅からマウスカーソルに向かってレーザーラインを表示します。
 
 ## 開発ワークフロー
 
@@ -22,7 +22,7 @@ CursorFinderは、大画面や複数ディスプレイでマウスカーソル�
   git worktree remove .worktrees/feature-name
   git branch -d feature/feature-name
   ```
-- **workspaceファイルを更新**: worktree作成時、新しいディレクトリを含むよう[`.code-workspace`](CursorFinder.code-workspace)を更新
+- **workspaceファイルを更新**: worktree作成時、新しいディレクトリを含むよう[`.code-workspace`](LaserGuide.code-workspace)を更新
 - **マージ前に承認を得る**: mainにマージする前に変更を人間に説明し、確認を得る
 
 ### コミットの実践
@@ -61,8 +61,8 @@ CursorFinderは、大画面や複数ディスプレイでマウスカーソル�
 
 ### プロジェクト構造
 ```
-CursorFinder/
-├── CursorFinder/          # Swiftソースコード
+LaserGuide/
+├── LaserGuide/          # Swiftソースコード
 │   ├── Views/            # SwiftUIビュー
 │   ├── Models/           # ビューモデルとデータモデル
 │   ├── Managers/         # ビジネスロジックマネージャー
@@ -74,10 +74,10 @@ CursorFinder/
 ```
 
 ### 主要ファイル
-- [`LaserViewModel.swift`](CursorFinder/Models/LaserViewModel.swift) - コアレーザー表示ロジック
-- [`Config.swift`](CursorFinder/Config.swift) - アプリ設定定数
+- [`LaserViewModel.swift`](LaserGuide/Models/LaserViewModel.swift) - コアレーザー表示ロジック
+- [`Config.swift`](LaserGuide/Config.swift) - アプリ設定定数
 - [`Makefile`](Makefile) - ビルドとリリースコマンド
-- [`Formula/cursorfinder.rb`](Formula/cursorfinder.rb) - Homebrew配布
+- [`Formula/laserguide.rb`](Formula/laserguide.rb) - Homebrew配布
 
 ## リリースプロセス
 
@@ -129,9 +129,9 @@ CursorFinder/
    git worktree add .worktrees/feature-name -b feature/feature-name
    cd .worktrees/feature-name
    ```
-2. [`.code-workspace`](CursorFinder.code-workspace)を更新して新しいworktreeを含める
+2. [`.code-workspace`](LaserGuide.code-workspace)を更新して新しいworktreeを含める
 3. 適切なマネージャー/ビューで実装
-4. 設定を追加する場合は[`Config.swift`](CursorFinder/Config.swift)を更新
+4. 設定を追加する場合は[`Config.swift`](LaserGuide/Config.swift)を更新
 5. `make dev`でテスト
 6. README.mdの機能セクションを更新（日本語版も）
 7. `feat:`プレフィックスでコミット

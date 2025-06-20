@@ -1,8 +1,8 @@
-# CursorFinder
+# LaserGuide
 
 大画面や複数ディスプレイでマウスカーソルを見つけやすくするmacOSアプリです。画面の四隅からマウスカーソルに向かってレーザーのような線を表示します。
 
-<img width="1200" alt="CursorFinder Demo" src="https://github.com/kawaz/CursorFinder/assets/326750/demo-placeholder.png">
+<img width="1200" alt="LaserGuide Demo" src="https://github.com/kawaz/LaserGuide/assets/326750/demo-placeholder.png">
 
 ## 機能
 
@@ -27,24 +27,24 @@
 
 ```bash
 # 方法1: 直接インストール
-brew install kawaz/cursorfinder/cursorfinder
+brew install kawaz/laserguide/laserguide
 
 # 方法2: tapを追加してからインストール
-brew tap kawaz/cursorfinder https://github.com/kawaz/CursorFinder
-brew install cursorfinder
+brew tap kawaz/laserguide https://github.com/kawaz/LaserGuide
+brew install laserguide
 ```
 
 ### ソースからビルド（Xcode）
 
 1. リポジトリをクローン:
 ```bash
-git clone https://github.com/kawaz/CursorFinder.git
-cd CursorFinder
+git clone https://github.com/kawaz/LaserGuide.git
+cd LaserGuide
 ```
 
 2. Xcodeでプロジェクトを開く:
 ```bash
-open [CursorFinder.xcodeproj](CursorFinder.xcodeproj)
+open [LaserGuide.xcodeproj](LaserGuide.xcodeproj)
 ```
 
 3. プロジェクトをビルドして実行（⌘+R）
@@ -53,8 +53,8 @@ open [CursorFinder.xcodeproj](CursorFinder.xcodeproj)
 
 1. リポジトリをクローン:
 ```bash
-git clone https://github.com/kawaz/CursorFinder.git
-cd CursorFinder
+git clone https://github.com/kawaz/LaserGuide.git
+cd LaserGuide
 ```
 
 2. Makeを使用してビルドと実行:
@@ -75,25 +75,25 @@ make build-zip
 3. xcodebuildで手動ビルド:
 ```bash
 # デバッグ版をビルド
-xcodebuild -scheme CursorFinder -configuration Debug build
+xcodebuild -scheme LaserGuide -configuration Debug build
 
 # リリース版をビルド  
-xcodebuild -scheme CursorFinder -configuration Release build
+xcodebuild -scheme LaserGuide -configuration Release build
 ```
 
 注: 現在のリリースは配布を容易にするためコード署名なしでビルドされています。
 
 ### ビルド済みバイナリ
 
-[リリースページ](https://github.com/kawaz/CursorFinder/releases)から最新版をダウンロードしてください。
+[リリースページ](https://github.com/kawaz/LaserGuide/releases)から最新版をダウンロードしてください。
 
-1. `CursorFinder.zip`をダウンロード
-2. 解凍して`CursorFinder.app`をアプリケーションフォルダに移動
+1. `LaserGuide.zip`をダウンロード
+2. 解凍して`LaserGuide.app`をアプリケーションフォルダに移動
 3. アプリを開く（初回は右クリックして「開く」を選択する必要があるかもしれません）
 
 ## 使い方
 
-1. CursorFinderを起動
+1. LaserGuideを起動
 2. メニューバーの🔍アイコンを確認
 3. マウスを動かすとレーザーラインが表示されます
 4. 0.3秒間動かさないと自動的に消えます
@@ -101,7 +101,7 @@ xcodebuild -scheme CursorFinder -configuration Release build
 
 ## 設定
 
-現在の設定オプションは[`Config.swift`](CursorFinder/Config.swift)で変更可能:
+現在の設定オプションは[`Config.swift`](LaserGuide/Config.swift)で変更可能:
 
 - **表示設定**: 線の太さ、グラデーションカラー
 - **タイミング**: 非アクティブ時の閾値
@@ -109,7 +109,7 @@ xcodebuild -scheme CursorFinder -configuration Release build
 
 ## プライバシーとセキュリティ
 
-CursorFinderはマウスの動きをグローバルに追跡するためアクセシビリティ権限が必要です。このアプリは:
+LaserGuideはマウスの動きをグローバルに追跡するためアクセシビリティ権限が必要です。このアプリは:
 - データの収集や送信は一切行いません
 - マウス位置は表示目的のみで使用されます
 - 完全にローカルで動作します

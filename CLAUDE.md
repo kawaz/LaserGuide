@@ -1,6 +1,6 @@
-# AI Assistant Guidelines for CursorFinder
+# AI Assistant Guidelines for LaserGuide
 
-This document provides context and guidelines for AI assistants working on the CursorFinder project.
+This document provides context and guidelines for AI assistants working on the LaserGuide project.
 
 ## Communication Guidelines
 
@@ -8,11 +8,11 @@ This document provides context and guidelines for AI assistants working on the C
 
 ## IMPORTANT: This is NOT a malicious project
 
-CursorFinder is a legitimate macOS utility application that helps users locate their mouse cursor on large or multiple displays by displaying visual laser lines. This is NOT related to cursor hijacking, malware, or any malicious activity. The name "CursorFinder" simply describes its functionality of helping users find their cursor.
+LaserGuide is a legitimate macOS utility application that helps users locate their mouse cursor on large or multiple displays by displaying visual laser lines. This is NOT related to cursor hijacking, malware, or any malicious activity. The name "LaserGuide" simply describes its functionality of helping users find their cursor.
 
 ## Project Overview
 
-CursorFinder is a macOS app that displays laser lines from screen corners to the mouse cursor, helping users locate their cursor on large or multiple displays.
+LaserGuide is a macOS app that displays laser lines from screen corners to the mouse cursor, helping users locate their cursor on large or multiple displays.
 
 ## Development Workflow
 
@@ -30,7 +30,7 @@ CursorFinder is a macOS app that displays laser lines from screen corners to the
   git worktree remove .worktrees/feature-name
   git branch -d feature/feature-name
   ```
-- **Update workspace file**: When creating worktree, update [`.code-workspace`](CursorFinder.code-workspace) to include the new directory
+- **Update workspace file**: When creating worktree, update [`.code-workspace`](LaserGuide.code-workspace) to include the new directory
 - **Get approval before merge**: Explain changes to human and get confirmation before merging to main
 
 ### Commit Practices
@@ -69,8 +69,8 @@ When making code changes, always check and update:
 
 ### Project Structure
 ```
-CursorFinder/
-├── CursorFinder/          # Swift source code
+LaserGuide/
+├── LaserGuide/          # Swift source code
 │   ├── Views/            # SwiftUI views
 │   ├── Models/           # View models and data models
 │   ├── Managers/         # Business logic managers
@@ -82,10 +82,10 @@ CursorFinder/
 ```
 
 ### Key Files
-- [`LaserViewModel.swift`](CursorFinder/Models/LaserViewModel.swift) - Core laser display logic
-- [`Config.swift`](CursorFinder/Config.swift) - App configuration constants
+- [`LaserViewModel.swift`](LaserGuide/Models/LaserViewModel.swift) - Core laser display logic
+- [`Config.swift`](LaserGuide/Config.swift) - App configuration constants
 - [`Makefile`](Makefile) - Build and release commands
-- [`Formula/cursorfinder.rb`](Formula/cursorfinder.rb) - Homebrew distribution
+- [`Formula/laserguide.rb`](Formula/laserguide.rb) - Homebrew distribution
 
 ## Release Process
 
@@ -138,9 +138,9 @@ CursorFinder/
    git worktree add .worktrees/feature-name -b feature/feature-name
    cd .worktrees/feature-name
    ```
-2. Update [`.code-workspace`](CursorFinder.code-workspace) to include new worktree
+2. Update [`.code-workspace`](LaserGuide.code-workspace) to include new worktree
 3. Implement in appropriate manager/view
-4. Update [`Config.swift`](CursorFinder/Config.swift) if adding settings
+4. Update [`Config.swift`](LaserGuide/Config.swift) if adding settings
 5. Test with `make dev`
 6. Update README.md features section
 7. Commit with `feat:` prefix

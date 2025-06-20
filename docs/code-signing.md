@@ -31,13 +31,13 @@ Code signing allows macOS to verify that an app hasn't been modified since it wa
 
 For local builds:
 ```bash
-codesign --force --sign "Apple Development: YOUR_EMAIL (TEAM_ID)" --deep CursorFinder.app
+codesign --force --sign "Apple Development: YOUR_EMAIL (TEAM_ID)" --deep LaserGuide.app
 ```
 
 To verify:
 ```bash
-codesign -dv --verbose=4 CursorFinder.app
-spctl -a -vvv -t install CursorFinder.app
+codesign -dv --verbose=4 LaserGuide.app
+spctl -a -vvv -t install LaserGuide.app
 ```
 
 ## GitHub Actions Setup

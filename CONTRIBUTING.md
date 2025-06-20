@@ -1,4 +1,4 @@
-# Contributing to CursorFinder
+# Contributing to LaserGuide
 
 ## Development Workflow
 
@@ -69,7 +69,7 @@ make dev
 make build-debug
 
 # Test Homebrew formula locally
-brew install --build-from-source [Formula/cursorfinder.rb](Formula/cursorfinder.rb)
+brew install --build-from-source [Formula/laserguide.rb](Formula/laserguide.rb)
 ```
 
 ## Pull Request Process

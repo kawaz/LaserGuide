@@ -1,8 +1,8 @@
-# CursorFinder
+# LaserGuide
 
 A macOS app that displays laser-like lines from screen corners to your mouse cursor, making it easier to locate your cursor on large or multiple displays.
 
-<img width="1200" alt="CursorFinder Demo" src="https://github.com/kawaz/CursorFinder/assets/326750/demo-placeholder.png">
+<img width="1200" alt="LaserGuide Demo" src="https://github.com/kawaz/LaserGuide/assets/326750/demo-placeholder.png">
 
 ## Features
 
@@ -27,11 +27,11 @@ A macOS app that displays laser-like lines from screen corners to your mouse cur
 
 ```bash
 # Method 1: Direct install
-brew install kawaz/cursorfinder/cursorfinder
+brew install kawaz/laserguide/laserguide
 
 # Method 2: Add tap first
-brew tap kawaz/cursorfinder https://github.com/kawaz/CursorFinder
-brew install cursorfinder
+brew tap kawaz/laserguide https://github.com/kawaz/LaserGuide
+brew install laserguide
 ```
 
 
@@ -39,13 +39,13 @@ brew install cursorfinder
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/kawaz/CursorFinder.git
-cd CursorFinder
+git clone https://github.com/kawaz/LaserGuide.git
+cd LaserGuide
 ```
 
 2. Open the project in Xcode:
 ```bash
-open [CursorFinder.xcodeproj](CursorFinder.xcodeproj)
+open [LaserGuide.xcodeproj](LaserGuide.xcodeproj)
 ```
 
 3. Build and run the project (⌘+R)
@@ -54,8 +54,8 @@ open [CursorFinder.xcodeproj](CursorFinder.xcodeproj)
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/kawaz/CursorFinder.git
-cd CursorFinder
+git clone https://github.com/kawaz/LaserGuide.git
+cd LaserGuide
 ```
 
 2. Build and run using Make:
@@ -76,25 +76,25 @@ make build-zip
 3. Manual build with xcodebuild:
 ```bash
 # Build for Debug
-xcodebuild -scheme CursorFinder -configuration Debug build
+xcodebuild -scheme LaserGuide -configuration Debug build
 
 # Build for Release  
-xcodebuild -scheme CursorFinder -configuration Release build
+xcodebuild -scheme LaserGuide -configuration Release build
 ```
 
 Note: Current releases are built without code signing for easier distribution.
 
 ### Pre-built Binary
 
-Download the latest release from the [Releases page](https://github.com/kawaz/CursorFinder/releases).
+Download the latest release from the [Releases page](https://github.com/kawaz/LaserGuide/releases).
 
-1. Download `CursorFinder.zip`
-2. Unzip and move `CursorFinder.app` to your Applications folder
+1. Download `LaserGuide.zip`
+2. Unzip and move `LaserGuide.app` to your Applications folder
 3. Open the app (you may need to right-click and select "Open" the first time)
 
 ## Usage
 
-1. Launch CursorFinder
+1. Launch LaserGuide
 2. Look for the 🔍 icon in your menu bar
 3. Move your mouse to see the laser lines
 4. The lines will automatically disappear after 0.3 seconds of inactivity
@@ -102,7 +102,7 @@ Download the latest release from the [Releases page](https://github.com/kawaz/Cu
 
 ## Configuration
 
-Current configuration options are available in [`Config.swift`](CursorFinder/Config.swift):
+Current configuration options are available in [`Config.swift`](LaserGuide/Config.swift):
 
 - **Visual Settings**: Line width, gradient colors
 - **Timing**: Inactivity threshold
@@ -110,7 +110,7 @@ Current configuration options are available in [`Config.swift`](CursorFinder/Con
 
 ## Privacy & Security
 
-CursorFinder requires accessibility permissions to track mouse movements globally. The app:
+LaserGuide requires accessibility permissions to track mouse movements globally. The app:
 - Does not collect or transmit any data
 - Only tracks mouse position for display purposes
 - Runs entirely locally on your machine
