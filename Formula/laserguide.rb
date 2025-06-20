@@ -1,8 +1,8 @@
 class Laserguide < Formula
   desc "Display laser lines from screen corners to your mouse cursor"
   homepage "https://github.com/kawaz/LaserGuide"
-  url "https://github.com/kawaz/LaserGuide/releases/download/v0.5.0/LaserGuide-0.5.0.zip"
-  sha256 "454e8a86c7af1bc2d18c1e5681fcb618ac41ffe33e30c8a2e5e36d589a1eff31"
+  url "https://github.com/kawaz/LaserGuide/releases/download/v0.5.1/LaserGuide-0.5.1.zip"
+  sha256 "ccaa65de7e9351db32b70cf524350304161c0264731193f8b17977aad7b1c715"
   license "MIT"
 
   depends_on :macos => :sonoma
