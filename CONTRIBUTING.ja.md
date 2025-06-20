@@ -44,7 +44,7 @@ PRをmainにマージするだけ！システムが自動的に:
    - `feat:`コミット → マイナーバージョンアップ
    - その他のコード変更 → パッチバージョンアップ
 3. **リリースを作成**: 自動的にタグ付け、ビルド、公開
-4. **Formulaを更新**: Homebrew formulaが自動的に更新されます
+4. **Caskを更新**: Homebrew caskが自動的に更新されます
 
 #### 手動リリース（必要な場合）
 
@@ -52,7 +52,7 @@ PRをmainにマージするだけ！システムが自動的に:
 
 ```bash
 make version-patch  # バグ修正用（0.0.X）
-make version-minor  # 新機能用（0.X.0）  
+make version-minor  # 新機能用（0.X.0）
 make version-major  # 破壊的変更用（X.0.0）
 git push origin v0.2.3
 ```
@@ -68,8 +68,8 @@ make dev
 # ビルドのみ
 make build-debug
 
-# Homebrew formulaをローカルでテスト
-brew install --build-from-source [Formula/laserguide.rb](Formula/laserguide.rb)
+# Homebrew caskをローカルでテスト
+brew install --cask ./Casks/laserguide.rb
 ```
 
 ## プルリクエストのプロセス

@@ -27,11 +27,11 @@
 
 ```bash
 # 方法1: 直接インストール
-brew install kawaz/laserguide/laserguide
+brew install --cask kawaz/laserguide/laserguide
 
 # 方法2: tapを追加してからインストール
 brew tap kawaz/laserguide https://github.com/kawaz/LaserGuide
-brew install laserguide
+brew install --cask laserguide
 ```
 
 ### ソースからビルド（Xcode）

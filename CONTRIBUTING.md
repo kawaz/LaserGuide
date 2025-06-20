@@ -44,7 +44,7 @@ Simply merge your PR to main! The system will automatically:
    - `feat:` commits → minor version bump
    - Other code changes → patch version bump
 3. **Create Release**: Automatically tags, builds, and publishes
-4. **Update Formula**: Homebrew formula is updated automatically
+4. **Update Cask**: Homebrew cask is updated automatically
 
 #### Manual Release (When Needed)
 
@@ -68,8 +68,8 @@ make dev
 # Build only
 make build-debug
 
-# Test Homebrew formula locally
-brew install --build-from-source [Formula/laserguide.rb](Formula/laserguide.rb)
+# Test Homebrew cask locally
+brew install --cask ./Casks/laserguide.rb
 ```
 
 ## Pull Request Process
