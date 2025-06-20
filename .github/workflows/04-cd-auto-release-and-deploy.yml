@@ -124,11 +124,11 @@ jobs:
       - name: Build Universal Binary
         if: steps.check_changes.outputs.skip_release != 'true'
         run: |
-          xcodebuild -scheme CursorFinder \
+          xcodebuild -scheme LaserGuide \
             -configuration Release \
             -derivedDataPath ./build \
             -destination 'generic/platform=macOS' \
-            -archivePath ./build/CursorFinder.xcarchive \
+            -archivePath ./build/LaserGuide.xcarchive \
             archive \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO
@@ -137,10 +137,10 @@ jobs:
         if: steps.check_changes.outputs.skip_release != 'true'
         run: |
           VERSION="${{ steps.version_bump.outputs.version_number }}"
-          ZIP_NAME="CursorFinder-${VERSION}.zip"
+          ZIP_NAME="LaserGuide-${VERSION}.zip"
           
-          cd build/CursorFinder.xcarchive/Products/Applications
-          zip -r ../../../"${ZIP_NAME}" CursorFinder.app
+          cd build/LaserGuide.xcarchive/Products/Applications
+          zip -r ../../../"${ZIP_NAME}" LaserGuide.app
           cd -
           mv build/"${ZIP_NAME}" .
           
@@ -177,13 +177,13 @@ jobs:
           
           # Update Formula
           sed -i '' \
-            -e "s|download/v[0-9.]*/CursorFinder-[0-9.]*\.zip|download/v${VERSION}/CursorFinder-${VERSION}.zip|" \
+            -e "s|download/v[0-9.]*/LaserGuide-[0-9.]*\.zip|download/v${VERSION}/LaserGuide-${VERSION}.zip|" \
             -e "s|sha256 \"[a-f0-9]*\"|sha256 \"${SHA256}\"|" \
-            Formula/cursorfinder.rb
+            Formula/laserguide.rb
           
           # Commit and push changes
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Formula/cursorfinder.rb
+          git add Formula/laserguide.rb
           git commit -m "Update Formula to v${VERSION}"
           git push origin main

@@ -21,7 +21,7 @@ jobs:
     - name: Build and Test
       run: |
         xcodebuild clean build \
-          -scheme CursorFinder \
+          -scheme LaserGuide \
           -configuration Debug \
           -destination 'platform=macOS' \
           CODE_SIGN_IDENTITY="" \
@@ -29,14 +29,14 @@ jobs:
     
     - name: Verify Universal Binary
       run: |
-        xcodebuild -scheme CursorFinder \
+        xcodebuild -scheme LaserGuide \
           -configuration Release \
           -derivedDataPath ./build \
           -destination 'generic/platform=macOS' \
-          -archivePath ./build/CursorFinder.xcarchive \
+          -archivePath ./build/LaserGuide.xcarchive \
           archive \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO
         
         # Check architectures
-        file build/CursorFinder.xcarchive/Products/Applications/CursorFinder.app/Contents/MacOS/CursorFinder | grep "universal"
+        file build/LaserGuide.xcarchive/Products/Applications/LaserGuide.app/Contents/MacOS/LaserGuide | grep "universal"
