@@ -10,6 +10,9 @@ struct Config {
         // Animation duration for laser fade effect
         static let fadeAnimationDuration: TimeInterval = 0.2
         
+        // Default laser colors
+        static let defaultLaserColor = Color.blue
+        
         // Gradient colors for laser effect
         static let gradientStops: [Gradient.Stop] = [
             .init(color: Color.blue.opacity(1.0), location: 0.0),
