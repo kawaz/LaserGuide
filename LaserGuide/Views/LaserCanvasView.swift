@@ -106,38 +106,38 @@ struct LaserCanvasView: View {
             return nil
         }
         
-        var parameterMin: CGFloat = 0
-        var parameterMax: CGFloat = 1
+        var tMin: CGFloat = 0
+        var tMax: CGFloat = 1
         
         // Check intersection with each edge
         // Left edge (x = 0)
         if deltaX != 0 {
-            let leftEdgeParameter = (0 - from.x) / deltaX
-            let rightEdgeParameter = (screenSize.width - from.x) / deltaX
+            let t1 = (0 - from.x) / deltaX
+            let t2 = (screenSize.width - from.x) / deltaX
             
-            parameterMin = max(parameterMin, min(leftEdgeParameter, rightEdgeParameter))
-            parameterMax = min(parameterMax, max(leftEdgeParameter, rightEdgeParameter))
+            tMin = max(tMin, min(t1, t2))
+            tMax = min(tMax, max(t1, t2))
         }
         
         // Top/bottom edges (y = 0 or height)
         if deltaY != 0 {
-            let topEdgeParameter = (0 - from.y) / deltaY
-            let bottomEdgeParameter = (screenSize.height - from.y) / deltaY
+            let t1 = (0 - from.y) / deltaY
+            let t2 = (screenSize.height - from.y) / deltaY
             
-            parameterMin = max(parameterMin, min(topEdgeParameter, bottomEdgeParameter))
-            parameterMax = min(parameterMax, max(topEdgeParameter, bottomEdgeParameter))
+            tMin = max(tMin, min(t1, t2))
+            tMax = min(tMax, max(t1, t2))
         }
         
-        // If parameterMin > parameterMax, no intersection
-        if parameterMin > parameterMax {
+        // If tMin > tMax, no intersection
+        if tMin > tMax {
             return nil
         }
         
-        // Use parameterMax for the intersection point (where line exits the screen)
-        if parameterMax >= 0 && parameterMax <= 1 {
+        // Use tMax for the intersection point (where line exits the screen)
+        if tMax >= 0 && tMax <= 1 {
             return CGPoint(
-                x: from.x + deltaX * parameterMax,
-                y: from.y + deltaY * parameterMax
+                x: from.x + deltaX * tMax,
+                y: from.y + deltaY * tMax
             )
         }
         
