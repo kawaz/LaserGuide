@@ -124,4 +124,4 @@ _bump-version:
 	echo "GitHub Actions will automatically:" && \
 	echo "  - Create release" && \
 	echo "  - Build app" && \
-	echo "  - Update Formula"
+	echo "  - Update Cask"
