@@ -24,8 +24,12 @@ struct Config {
     // MARK: - Window Settings
     struct Window {
         // Use screenSaver level to avoid being captured by screenshots
-        static let windowLevel: NSWindow.Level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.screenSaverWindow)))
-        static let collectionBehavior: NSWindow.CollectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
+        static let windowLevel: NSWindow.Level = NSWindow.Level(
+            rawValue: Int(CGWindowLevelForKey(.screenSaverWindow))
+        )
+        static let collectionBehavior: NSWindow.CollectionBehavior = [
+            .canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle
+        ]
     }
 
     // MARK: - Performance Settings

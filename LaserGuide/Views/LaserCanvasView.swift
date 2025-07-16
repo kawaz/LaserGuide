@@ -58,7 +58,7 @@ struct LaserCanvasView: View {
         if targetPoint.x < 0 || targetPoint.x > size.width || targetPoint.y < 0 || targetPoint.y > size.height {
             for corner in corners {
                 // Calculate intersection point with screen edge
-                let intersection = calculateScreenEdgeIntersection(from: corner, to: targetPoint, screenSize: size)
+                let intersection = calculateScreenEdgeIntersection(from: corner, target: targetPoint, screenSize: size)
                 
                 if let intersectionPoint = intersection {
                     // Calculate distance from intersection to actual cursor position
@@ -97,47 +97,47 @@ struct LaserCanvasView: View {
         return indicators
     }
     
-    private func calculateScreenEdgeIntersection(from: CGPoint, to: CGPoint, screenSize: CGSize) -> CGPoint? {
-        let deltaX = to.x - from.x
-        let deltaY = to.y - from.y
+    private func calculateScreenEdgeIntersection(from: CGPoint, target: CGPoint, screenSize: CGSize) -> CGPoint? {
+        let deltaX = target.x - from.x
+        let deltaY = target.y - from.y
         
         // If no movement, return nil
         if deltaX == 0 && deltaY == 0 {
             return nil
         }
         
-        var tMin: CGFloat = 0
-        var tMax: CGFloat = 1
+        var parameterMin: CGFloat = 0
+        var parameterMax: CGFloat = 1
         
         // Check intersection with each edge
         // Left edge (x = 0)
         if deltaX != 0 {
-            let t1 = (0 - from.x) / deltaX
-            let t2 = (screenSize.width - from.x) / deltaX
+            let leftEdgeParameter = (0 - from.x) / deltaX
+            let rightEdgeParameter = (screenSize.width - from.x) / deltaX
             
-            tMin = max(tMin, min(t1, t2))
-            tMax = min(tMax, max(t1, t2))
+            parameterMin = max(parameterMin, min(leftEdgeParameter, rightEdgeParameter))
+            parameterMax = min(parameterMax, max(leftEdgeParameter, rightEdgeParameter))
         }
         
         // Top/bottom edges (y = 0 or height)
         if deltaY != 0 {
-            let t1 = (0 - from.y) / deltaY
-            let t2 = (screenSize.height - from.y) / deltaY
+            let topEdgeParameter = (0 - from.y) / deltaY
+            let bottomEdgeParameter = (screenSize.height - from.y) / deltaY
             
-            tMin = max(tMin, min(t1, t2))
-            tMax = min(tMax, max(t1, t2))
+            parameterMin = max(parameterMin, min(topEdgeParameter, bottomEdgeParameter))
+            parameterMax = min(parameterMax, max(topEdgeParameter, bottomEdgeParameter))
         }
         
-        // If tMin > tMax, no intersection
-        if tMin > tMax {
+        // If parameterMin > parameterMax, no intersection
+        if parameterMin > parameterMax {
             return nil
         }
         
-        // Use tMax for the intersection point (where line exits the screen)
-        if tMax >= 0 && tMax <= 1 {
+        // Use parameterMax for the intersection point (where line exits the screen)
+        if parameterMax >= 0 && parameterMax <= 1 {
             return CGPoint(
-                x: from.x + deltaX * tMax,
-                y: from.y + deltaY * tMax
+                x: from.x + deltaX * parameterMax,
+                y: from.y + deltaY * parameterMax
             )
         }
         

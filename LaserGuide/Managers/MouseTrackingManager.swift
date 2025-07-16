@@ -51,7 +51,7 @@ class MouseTrackingManager: ObservableObject {
         // トレイアイコンクリック中でも継続して動作する
         mouseMoveMonitor = NSEvent.addGlobalMonitorForEvents(
             matching: [.mouseMoved, .leftMouseDragged, .rightMouseDragged, .otherMouseDragged]
-        ) { [weak self] event in
+        ) { [weak self] _ in
             guard let self = self else { return }
             
             let location = NSEvent.mouseLocation
