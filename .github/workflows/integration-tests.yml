@@ -22,19 +22,29 @@ jobs:
       run: |
         echo "🧪 Checking if test target exists..."
         
-        # Check if test target is configured in the scheme
-        if xcodebuild -showBuildSettings -project LaserGuide.xcodeproj -scheme LaserGuide | grep -q "TEST_"; then
-          echo "✅ Test target found, running tests..."
-          xcodebuild test \
-            -project LaserGuide.xcodeproj \
-            -scheme LaserGuide \
-            -destination 'platform=macOS' \
-            -derivedDataPath build \
-            -enableCodeCoverage YES
+        # Try to run tests and handle the case where no test target is configured
+        if xcodebuild test \
+          -project LaserGuide.xcodeproj \
+          -scheme LaserGuide \
+          -destination 'platform=macOS' \
+          -derivedDataPath build \
+          -enableCodeCoverage YES 2>&1 | tee test_output.log; then
+          echo "✅ Tests completed successfully"
         else
-          echo "⚠️  No test target configured in scheme, skipping unit tests"
-          echo "Note: Test files exist but are not integrated into Xcode project"
+          # Check if the error is due to no test target configured
+          if grep -q "not currently configured for the test action" test_output.log; then
+            echo "⚠️  No test target configured in scheme, skipping unit tests"
+            echo "Note: Test files exist but are not integrated into Xcode project"
+            echo "This is expected for the current project setup"
+          else
+            echo "❌ Tests failed for other reasons"
+            cat test_output.log
+            exit 1
+          fi
         fi
+        
+        # Clean up
+        rm -f test_output.log
     
     - name: Test CI/CD Pipeline Components
       run: |
