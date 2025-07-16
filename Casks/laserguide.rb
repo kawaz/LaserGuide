@@ -1,6 +1,6 @@
 cask "laserguide" do
-  version "0.5.3"
-  sha256 "26190ad843072d34e6ebcac3de81a0bb690fc4bf6c74242e400a21d522eec68d"
+  version "0.5.4"
+  sha256 "6516ed794ac0017fc7e0a763efd9d4ebafb80aa4482f2ffbcc05aa4eac2db2c2"
 
   url "https://github.com/kawaz/LaserGuide/releases/download/v#{version}/LaserGuide-#{version}.zip"
   name "LaserGuide"
