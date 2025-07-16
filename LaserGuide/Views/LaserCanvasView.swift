@@ -62,7 +62,10 @@ struct LaserCanvasView: View {
                 
                 if let intersectionPoint = intersection {
                     // Calculate distance from intersection to actual cursor position
-                    let intersectionDistance = hypot(targetPoint.x - intersectionPoint.x, targetPoint.y - intersectionPoint.y)
+                    let intersectionDistance = hypot(
+                        targetPoint.x - intersectionPoint.x,
+                        targetPoint.y - intersectionPoint.y
+                    )
                     let visibleDistance = hypot(intersectionPoint.x - corner.x, intersectionPoint.y - corner.y)
                     
                     // Calculate percentage (visible distance vs remaining distance)
@@ -173,7 +176,7 @@ struct LaserCanvasView: View {
             guard length > 1.0 else { continue }
             
             // Create tapered path efficiently
-            let path = createLaserPath(from: corner, to: targetPoint, distance: length, deltaX: deltaX, deltaY: deltaY)
+            let path = createLaserPath(from: corner, target: targetPoint, distance: length, deltaX: deltaX, deltaY: deltaY)
             
             // Apply gradient fill
             context.fill(
@@ -188,7 +191,7 @@ struct LaserCanvasView: View {
     }
     
     @inline(__always)
-    private func createLaserPath(from corner: CGPoint, to target: CGPoint, distance: CGFloat, deltaX: CGFloat, deltaY: CGFloat) -> Path {
+    private func createLaserPath(from corner: CGPoint, target: CGPoint, distance: CGFloat, deltaX: CGFloat, deltaY: CGFloat) -> Path {
         Path { pathBuilder in
             // Normalize and create perpendicular vector
             let perpX = -deltaY / distance
