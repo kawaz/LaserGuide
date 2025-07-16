@@ -98,11 +98,11 @@ struct LaserCanvasView: View {
     }
     
     private func calculateScreenEdgeIntersection(from: CGPoint, to: CGPoint, screenSize: CGSize) -> CGPoint? {
-        let dx = to.x - from.x
-        let dy = to.y - from.y
+        let deltaX = to.x - from.x
+        let deltaY = to.y - from.y
         
         // If no movement, return nil
-        if dx == 0 && dy == 0 {
+        if deltaX == 0 && deltaY == 0 {
             return nil
         }
         
@@ -111,18 +111,18 @@ struct LaserCanvasView: View {
         
         // Check intersection with each edge
         // Left edge (x = 0)
-        if dx != 0 {
-            let t1 = (0 - from.x) / dx
-            let t2 = (screenSize.width - from.x) / dx
+        if deltaX != 0 {
+            let t1 = (0 - from.x) / deltaX
+            let t2 = (screenSize.width - from.x) / deltaX
             
             tMin = max(tMin, min(t1, t2))
             tMax = min(tMax, max(t1, t2))
         }
         
         // Top/bottom edges (y = 0 or height)
-        if dy != 0 {
-            let t1 = (0 - from.y) / dy
-            let t2 = (screenSize.height - from.y) / dy
+        if deltaY != 0 {
+            let t1 = (0 - from.y) / deltaY
+            let t2 = (screenSize.height - from.y) / deltaY
             
             tMin = max(tMin, min(t1, t2))
             tMax = min(tMax, max(t1, t2))
@@ -136,8 +136,8 @@ struct LaserCanvasView: View {
         // Use tMax for the intersection point (where line exits the screen)
         if tMax >= 0 && tMax <= 1 {
             return CGPoint(
-                x: from.x + dx * tMax,
-                y: from.y + dy * tMax
+                x: from.x + deltaX * tMax,
+                y: from.y + deltaY * tMax
             )
         }
         
@@ -166,14 +166,14 @@ struct LaserCanvasView: View {
         // Batch draw all lasers
         for corner in corners {
             // Skip if target is too close to corner (optimization)
-            let dx = targetPoint.x - corner.x
-            let dy = targetPoint.y - corner.y
-            let length = hypot(dx, dy)
+            let deltaX = targetPoint.x - corner.x
+            let deltaY = targetPoint.y - corner.y
+            let length = hypot(deltaX, deltaY)
             
             guard length > 1.0 else { continue }
             
             // Create tapered path efficiently
-            let path = createLaserPath(from: corner, to: targetPoint, distance: length, dx: dx, dy: dy)
+            let path = createLaserPath(from: corner, to: targetPoint, distance: length, deltaX: deltaX, deltaY: deltaY)
             
             // Apply gradient fill
             context.fill(
@@ -188,11 +188,11 @@ struct LaserCanvasView: View {
     }
     
     @inline(__always)
-    private func createLaserPath(from corner: CGPoint, to target: CGPoint, distance: CGFloat, dx: CGFloat, dy: CGFloat) -> Path {
-        Path { p in
+    private func createLaserPath(from corner: CGPoint, to target: CGPoint, distance: CGFloat, deltaX: CGFloat, deltaY: CGFloat) -> Path {
+        Path { pathBuilder in
             // Normalize and create perpendicular vector
-            let perpX = -dy / distance
-            let perpY = dx / distance
+            let perpX = -deltaY / distance
+            let perpY = deltaX / distance
             
             // Width at corner (thick) and at target (thin)
             let cornerWidth: CGFloat = 8.0
@@ -205,11 +205,11 @@ struct LaserCanvasView: View {
             let target2 = CGPoint(x: target.x - perpX * targetWidth, y: target.y - perpY * targetWidth)
             
             // Draw trapezoid
-            p.move(to: corner1)
-            p.addLine(to: target1)
-            p.addLine(to: target2)
-            p.addLine(to: corner2)
-            p.closeSubpath()
+            pathBuilder.move(to: corner1)
+            pathBuilder.addLine(to: target1)
+            pathBuilder.addLine(to: target2)
+            pathBuilder.addLine(to: corner2)
+            pathBuilder.closeSubpath()
         }
     }
 }
