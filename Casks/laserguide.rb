@@ -11,12 +11,17 @@ cask "laserguide" do
 
   depends_on macos: ">= :sequoia"
 
+  # アップグレード時にも既存プロセスを終了
+  preflight do
+    system_command "/usr/bin/pkill", args: ["-f", "LaserGuide"], sudo: false
+  end
+
   app "LaserGuide.app"
 
-  uninstall quit: "com.kawaz.LaserGuide"
+  uninstall quit: "jp.kawaz.LaserGuide"
 
   zap trash: [
-    "~/Library/Preferences/com.kawaz.LaserGuide.plist",
-    "~/Library/Saved Application State/com.kawaz.LaserGuide.savedState",
+    "~/Library/Preferences/jp.kawaz.LaserGuide.plist",
+    "~/Library/Saved Application State/jp.kawaz.LaserGuide.savedState",
   ]
 end
