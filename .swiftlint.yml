@@ -1,0 +1,56 @@
+# SwiftLint Configuration for LaserGuide
+
+# Paths to include/exclude
+included:
+  - LaserGuide
+
+excluded:
+  - build
+  - .build
+  - .git
+  - .github
+
+# Rules
+disabled_rules:
+  - trailing_whitespace # Allow trailing whitespace for now
+
+opt_in_rules:
+  - empty_count
+  - empty_string
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - overridden_super_call
+  - redundant_nil_coalescing
+  - unused_import
+  - unused_private_declaration
+
+# Rule configurations
+line_length:
+  warning: 120
+  error: 150
+
+function_body_length:
+  warning: 60
+  error: 100
+
+type_body_length:
+  warning: 300
+  error: 400
+
+file_length:
+  warning: 400
+  error: 500
+
+cyclomatic_complexity:
+  warning: 10
+  error: 20
+
+# Custom rules for memory management
+custom_rules:
+  memory_leak_prevention:
+    name: "Memory Leak Prevention"
+    regex: '(?<!weak\s)(?<!unowned\s)self\.'
+    match_kinds:
+      - identifier
+    message: "Consider using weak or unowned self to prevent retain cycles"
+    severity: warning

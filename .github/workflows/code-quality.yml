@@ -1,0 +1,66 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  code-quality:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+    
+    - name: Swift Lint
+      run: |
+        # Install SwiftLint if not available
+        if ! command -v swiftlint &> /dev/null; then
+          brew install swiftlint
+        fi
+        
+        # Run SwiftLint
+        swiftlint --strict --reporter github-actions-logging
+    
+    - name: Build and Analyze
+      run: |
+        # Build with static analyzer
+        xcodebuild -project LaserGuide.xcodeproj \
+          -scheme LaserGuide \
+          -configuration Debug \
+          -derivedDataPath build \
+          analyze \
+          CLANG_STATIC_ANALYZER_MODE=deep \
+          RUN_CLANG_STATIC_ANALYZER=YES
+    
+    - name: Memory Leak Detection Build
+      run: |
+        # Build with Address Sanitizer for memory leak detection
+        xcodebuild -project LaserGuide.xcodeproj \
+          -scheme LaserGuide \
+          -configuration Debug \
+          -derivedDataPath build-asan \
+          build \
+          ENABLE_ADDRESS_SANITIZER=YES \
+          ENABLE_UNDEFINED_BEHAVIOR_SANITIZER=YES
+    
+    - name: Performance Monitoring Setup
+      run: |
+        # Create performance monitoring configuration
+        mkdir -p .github/performance
+        cat > .github/performance/config.json << EOF
+        {
+          "memory_threshold_mb": 100,
+          "cpu_threshold_percent": 50,
+          "startup_time_threshold_ms": 2000,
+          "monitoring_enabled": true
+        }
+        EOF
+        
+        echo "✅ Performance monitoring configuration created"
