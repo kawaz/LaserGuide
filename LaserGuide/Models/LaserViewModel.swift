@@ -1,54 +1,50 @@
 // LaserViewModel.swift
 import SwiftUI
+import Combine
 
 class LaserViewModel: ObservableObject {
     @Published var isVisible: Bool = false
     @Published var currentMouseLocation: CGPoint = .zero
     
-    private var mouseMoveMonitor: Any?
-    private var hideTimer: Timer?
     private let screen: NSScreen
+    private var subscribers = Set<AnyCancellable>()
+    private let mouseTrackingManager = MouseTrackingManager.shared
     
     init(screen: NSScreen) {
         self.screen = screen
+        setupMouseTracking()
     }
     
-    private func scheduleHideTimer() {
-        hideTimer?.invalidate()
-        hideTimer = Timer.scheduledTimer(withTimeInterval: Config.Timing.inactivityThreshold, repeats: false) { [weak self] _ in
-            DispatchQueue.main.async {
-                self?.isVisible = false
+    private func setupMouseTracking() {
+        // MouseTrackingManagerからマウス位置の変更を監視
+        mouseTrackingManager.$currentMouseLocation
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] location in
+                self?.currentMouseLocation = location
             }
-        }
+            .store(in: &subscribers)
+        
+        // MouseTrackingManagerからマウスアクティブ状態の変更を監視
+        mouseTrackingManager.$isMouseActive
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isActive in
+                self?.isVisible = isActive
+            }
+            .store(in: &subscribers)
     }
     
     func startTracking() {
-        stopTracking()
-        
-        // Monitor mouse movement for immediate response
-        mouseMoveMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .leftMouseDragged, .rightMouseDragged]) { [weak self] event in
-            guard let self = self else { return }
-            
-            let location = NSEvent.mouseLocation
-            
-            DispatchQueue.main.async {
-                self.currentMouseLocation = location
-                self.isVisible = true
-                self.scheduleHideTimer()
-            }
-        }
+        // グローバルマウス追跡を開始
+        mouseTrackingManager.startTracking()
     }
     
     func stopTracking() {
-        if let monitor = mouseMoveMonitor {
-            NSEvent.removeMonitor(monitor)
-            mouseMoveMonitor = nil
-        }
+        // 個別のViewModelが停止されても、他のスクリーンで使用されている可能性があるため
+        // MouseTrackingManagerは停止しない
+        subscribers.removeAll()
     }
-    
     
     deinit {
         stopTracking()
-        hideTimer?.invalidate()
     }
 }
