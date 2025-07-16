@@ -5,7 +5,6 @@ import Combine
 class LaserViewModel: ObservableObject {
     @Published var isVisible: Bool = false
     @Published var currentMouseLocation: CGPoint = .zero
-    @Published var mouseDistance: CGFloat = 0 // Distance from screen center
     
     private var cancellables = Set<AnyCancellable>()
     private var mouseMoveMonitor: Any?
@@ -79,19 +78,11 @@ class LaserViewModel: ObservableObject {
                     self.inactivitySubject.send()
                 }
                 
-                // Calculate distance from screen center
-                let screenCenter = CGPoint(
-                    x: self.screen.frame.midX,
-                    y: self.screen.frame.midY
-                )
-                let distance = hypot(location.x - screenCenter.x, location.y - screenCenter.y)
-                
                 // Update on main thread only if needed
                 if abs(self.currentMouseLocation.x - location.x) > 0.5 ||
                    abs(self.currentMouseLocation.y - location.y) > 0.5 {
                     DispatchQueue.main.async {
                         self.currentMouseLocation = location
-                        self.mouseDistance = distance
                     }
                 }
                 
