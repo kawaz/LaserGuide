@@ -82,6 +82,38 @@ brew install --cask ./Casks/laserguide.rb
 
 ## Code Style
 
-- Use SwiftLint rules (if configured)
+- Use SwiftLint rules (configured in `.swiftlint.yml`)
 - Follow Apple's Swift API Design Guidelines
 - Keep code modular and testable
+- Write unit tests for new functionality
+- Ensure memory leak prevention (avoid retain cycles)
+
+## Quality Assurance
+
+### Automated Checks
+
+All PRs automatically run:
+
+- **SwiftLint**: Code style and best practices
+- **Static Analysis**: Clang static analyzer with deep mode
+- **Memory Leak Detection**: Address Sanitizer and Undefined Behavior Sanitizer
+- **Unit Tests**: Comprehensive test suite including memory leak detection
+- **Integration Tests**: Build process and CI/CD pipeline validation
+
+### Performance Monitoring
+
+The project includes performance monitoring for:
+
+- Memory usage stability
+- CPU usage optimization
+- Startup time tracking
+- Timer management efficiency
+
+### Testing Guidelines
+
+When adding new features:
+
+1. Write unit tests for core functionality
+2. Add memory leak detection tests for new classes
+3. Include performance tests for critical paths
+4. Test edge cases and error conditions

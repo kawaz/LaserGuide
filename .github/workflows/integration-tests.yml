@@ -1,0 +1,130 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  integration-tests:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+    
+    - name: Run Unit Tests
+      run: |
+        xcodebuild test \
+          -project LaserGuide.xcodeproj \
+          -scheme LaserGuide \
+          -destination 'platform=macOS' \
+          -derivedDataPath build \
+          -enableCodeCoverage YES
+    
+    - name: Test CI/CD Pipeline Components
+      run: |
+        # Test that all required files exist for CI/CD
+        echo "🔍 Checking CI/CD pipeline components..."
+        
+        # Check workflow files
+        test -f .github/workflows/04-cd-auto-release-and-deploy.yml || (echo "❌ CD workflow missing" && exit 1)
+        test -f .github/workflows/code-quality.yml || (echo "❌ Code quality workflow missing" && exit 1)
+        
+        # Check Cask file
+        test -f Casks/laserguide.rb || (echo "❌ Cask file missing" && exit 1)
+        
+        # Check Makefile
+        test -f Makefile || (echo "❌ Makefile missing" && exit 1)
+        
+        # Validate Cask syntax
+        echo "🔍 Validating Cask syntax..."
+        ruby -c Casks/laserguide.rb || (echo "❌ Cask syntax error" && exit 1)
+        
+        echo "✅ All CI/CD components are present and valid"
+    
+    - name: Test Build Process
+      run: |
+        echo "🔨 Testing build process..."
+        
+        # Test debug build
+        xcodebuild -project LaserGuide.xcodeproj \
+          -scheme LaserGuide \
+          -configuration Debug \
+          -derivedDataPath build-test \
+          build
+        
+        # Verify app was created
+        test -d build-test/Build/Products/Debug/LaserGuide.app || (echo "❌ Debug build failed" && exit 1)
+        
+        echo "✅ Build process test completed successfully"
+    
+    - name: Test Release Archive Process
+      run: |
+        echo "📦 Testing release archive process..."
+        
+        # Test release archive (similar to what CI/CD does)
+        xcodebuild -project LaserGuide.xcodeproj \
+          -scheme LaserGuide \
+          -configuration Release \
+          -derivedDataPath build-release \
+          -archivePath build-release/LaserGuide.xcarchive \
+          archive \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO
+        
+        # Verify archive was created
+        test -d build-release/LaserGuide.xcarchive || (echo "❌ Release archive failed" && exit 1)
+        test -d build-release/LaserGuide.xcarchive/Products/Applications/LaserGuide.app || (echo "❌ App not found in archive" && exit 1)
+        
+        echo "✅ Release archive test completed successfully"
+    
+    - name: Test ZIP Creation Process
+      run: |
+        echo "🎁 Testing ZIP creation process..."
+        
+        # Create ZIP (similar to what CI/CD does)
+        cd build-release/LaserGuide.xcarchive/Products/Applications
+        zip -r ../../../../LaserGuide-test.zip LaserGuide.app
+        cd -
+        
+        # Verify ZIP was created and contains the app
+        test -f LaserGuide-test.zip || (echo "❌ ZIP creation failed" && exit 1)
+        
+        # Test ZIP contents
+        unzip -t LaserGuide-test.zip || (echo "❌ ZIP is corrupted" && exit 1)
+        
+        # Calculate SHA256 (similar to what CI/CD does)
+        SHA256=$(shasum -a 256 LaserGuide-test.zip | awk '{print $1}')
+        echo "SHA256: $SHA256"
+        
+        # Verify SHA256 format
+        [[ ${#SHA256} -eq 64 ]] || (echo "❌ Invalid SHA256 format" && exit 1)
+        
+        echo "✅ ZIP creation test completed successfully"
+    
+    - name: Generate Test Coverage Report
+      run: |
+        echo "📊 Generating test coverage report..."
+        
+        # Extract coverage data
+        xcrun xccov view --report --json build/Logs/Test/*.xcresult > coverage.json || true
+        
+        # Display coverage summary
+        if [ -f coverage.json ]; then
+          echo "✅ Coverage report generated"
+          # You could parse and display coverage metrics here
+        else
+          echo "⚠️  Coverage report not available"
+        fi
+    
+    - name: Cleanup Test Artifacts
+      run: |
+        echo "🧹 Cleaning up test artifacts..."
+        rm -rf build-test build-release LaserGuide-test.zip coverage.json
+        echo "✅ Cleanup completed"
