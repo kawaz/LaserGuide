@@ -1,6 +1,5 @@
 // LaserViewModel.swift
 import SwiftUI
-import Combine
 
 class LaserViewModel: ObservableObject {
     @Published var isVisible: Bool = false
