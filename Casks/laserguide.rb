@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 cask "laserguide" do
   version "0.5.4"
   sha256 "6516ed794ac0017fc7e0a763efd9d4ebafb80aa4482f2ffbcc05aa4eac2db2c2"
