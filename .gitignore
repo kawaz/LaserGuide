@@ -114,6 +114,6 @@ Temporary Items
 
 # Build output
 build/
-CursorFinder.zip
+*.zip
 export-options.plist
 /.worktrees/
