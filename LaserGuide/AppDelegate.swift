@@ -31,10 +31,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         
         let menu = NSMenu()
-        
-        // メニューが開かれる前の処理
-        menu.delegate = self
-        
+
         let quitItem = NSMenuItem(title: "Quit", action: #selector(quitApp), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
@@ -50,18 +47,5 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // アプリ終了時にマウス追跡を停止
         MouseTrackingManager.shared.stopTracking()
         NSApplication.shared.terminate(nil)
-    }
-}
-
-// MARK: - NSMenuDelegate
-extension AppDelegate: NSMenuDelegate {
-    func menuWillOpen(_ menu: NSMenu) {
-        // メニューが開かれる際も、マウス追跡は継続する
-        // 特別な処理は不要だが、将来的な拡張のためにデリゲートメソッドを用意
-    }
-    
-    func menuDidClose(_ menu: NSMenu) {
-        // メニューが閉じられた後も、マウス追跡は継続する
-        // 特別な処理は不要だが、将来的な拡張のためにデリゲートメソッドを用意
     }
 }

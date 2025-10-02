@@ -26,10 +26,11 @@ A macOS app that displays laser-like lines from screen corners to your mouse cur
 ### Install via Homebrew Cask
 
 ```bash
-brew install --cask kawaz/laserguide/laserguide
+brew tap kawaz/laserguide
+brew install --cask laserguide
 ```
 
-> **Note**: LaserGuide is now distributed as a Homebrew Cask for easier installation and updates. The previous Formula-based distribution has been deprecated.
+> **Note**: LaserGuide is distributed as a Homebrew Cask for easier installation and updates.
 
 
 ### Build from Source (Xcode)

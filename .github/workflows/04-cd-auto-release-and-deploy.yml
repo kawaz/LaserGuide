@@ -182,37 +182,38 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Update Cask
+      - name: Update Homebrew Tap
         if: steps.check_changes.outputs.skip_release != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
           set -e
           # Get version and SHA256
           VERSION="${{ steps.version_bump.outputs.version_number }}"
           SHA256=$(shasum -a 256 "${ZIP_NAME}" | awk '{print $1}')
-          
+
           echo "Version: $VERSION"
           echo "SHA256: $SHA256"
-          
-          # Switch to main branch
-          git fetch origin main
-          git checkout main
-          git pull origin main
-          
+
+          # Clone homebrew-laserguide tap repository
+          git clone https://x-access-token:${GH_TOKEN}@github.com/kawaz/homebrew-laserguide.git tap-repo
+          cd tap-repo
+
           # Update Cask
           sed -i '' \
             -e "s|version \"[0-9.]*\"|version \"${VERSION}\"|" \
             -e "s|sha256 \"[a-f0-9]*\"|sha256 \"${SHA256}\"|" \
             Casks/laserguide.rb
-          
+
           # Verify changes
           echo "Updated Cask contents:"
           cat Casks/laserguide.rb
-          
+
           # Commit and push changes
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Casks/laserguide.rb
           git commit -m "Update Cask to v${VERSION}"
           git push origin main
-          
-          echo "✅ Updated Cask to v${VERSION}"
+
+          echo "✅ Updated Homebrew tap to v${VERSION}"

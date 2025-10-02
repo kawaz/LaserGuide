@@ -49,13 +49,24 @@ class MouseTrackingManager: ObservableObject {
     private func setupGlobalMouseMonitor() {
         // グローバルマウスイベントを監視
         // トレイアイコンクリック中でも継続して動作する
+        // トラックパッドのスクロールやジェスチャーも検出するため、幅広いイベントを監視
         mouseMoveMonitor = NSEvent.addGlobalMonitorForEvents(
-            matching: [.mouseMoved, .leftMouseDragged, .rightMouseDragged, .otherMouseDragged]
+            matching: [
+                .mouseMoved,
+                .leftMouseDragged,
+                .rightMouseDragged,
+                .otherMouseDragged,
+                .scrollWheel,
+                .leftMouseDown,
+                .leftMouseUp,
+                .rightMouseDown,
+                .rightMouseUp
+            ]
         ) { [weak self] _ in
             guard let self = self else { return }
-            
+
             let location = NSEvent.mouseLocation
-            
+
             // メインスレッドで状態を更新
             DispatchQueue.main.async {
                 self.updateMouseLocation(location)

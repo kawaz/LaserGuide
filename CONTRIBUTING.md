@@ -68,7 +68,8 @@ make dev
 # Build only
 make build-debug
 
-# Test Homebrew cask locally
+# Test Homebrew cask locally (from tap repository)
+cd /path/to/homebrew-laserguide
 brew install --cask ./Casks/laserguide.rb
 ```
 
