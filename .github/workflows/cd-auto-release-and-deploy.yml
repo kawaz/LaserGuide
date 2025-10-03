@@ -173,26 +173,55 @@ jobs:
             CODE_SIGNING_REQUIRED=YES \
             CODE_SIGN_STYLE=Manual
 
+      - name: Verify Code Signature
+        if: steps.check_changes.outputs.skip_release != 'true'
+        run: |
+          set -e
+          APP_PATH="build/LaserGuide.xcarchive/Products/Applications/LaserGuide.app"
+
+          echo "🔏 Verifying code signature..."
+          codesign -dv --verbose=4 "$APP_PATH" 2>&1 | tee /tmp/codesign_output.txt
+
+          # Check if properly signed (not adhoc)
+          if grep -q "Signature=adhoc" /tmp/codesign_output.txt; then
+            echo "❌ Error: App is only adhoc signed"
+            exit 1
+          elif grep -q "Authority=Apple Development:" /tmp/codesign_output.txt || grep -q "Authority=Developer ID Application:" /tmp/codesign_output.txt; then
+            echo "✅ App is properly code signed"
+            grep "Authority=" /tmp/codesign_output.txt | head -1
+            grep "TeamIdentifier=" /tmp/codesign_output.txt || true
+          else
+            echo "❌ Unexpected signature status"
+            cat /tmp/codesign_output.txt
+            exit 1
+          fi
+
+          # Verify signature validity
+          echo ""
+          echo "🔍 Verifying signature validity..."
+          codesign --verify --verbose=4 "$APP_PATH" 2>&1
+          echo "✅ Signature is valid"
+
       - name: Create ZIP
         if: steps.check_changes.outputs.skip_release != 'true'
         run: |
           set -e
           VERSION="${{ steps.version_bump.outputs.version_number }}"
           ZIP_NAME="LaserGuide-${VERSION}.zip"
-          
+
           cd build/LaserGuide.xcarchive/Products/Applications
           zip -r ../../../"${ZIP_NAME}" LaserGuide.app
           cd -
           mv build/"${ZIP_NAME}" .
-          
+
           echo "ZIP_NAME=${ZIP_NAME}" >> "$GITHUB_ENV"
-          
+
           # Verify ZIP was created
           if [ ! -f "${ZIP_NAME}" ]; then
             echo "Error: ZIP file was not created"
             exit 1
           fi
-          
+
           echo "✅ Created ${ZIP_NAME}"
 
       - name: Push tag

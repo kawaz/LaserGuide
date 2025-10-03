@@ -19,6 +19,42 @@ brew install --cask laserguide --no-quarantine
 
 echo "✅ Installation complete"
 
+echo "🔏 Verifying code signature..."
+codesign -dv --verbose=4 "$APP_PATH" 2>&1 | tee /tmp/codesign_output.txt
+
+# Check if properly signed (not adhoc)
+if grep -q "Signature=adhoc" /tmp/codesign_output.txt; then
+    echo "⚠️  Warning: App is only adhoc signed (not properly code signed)"
+    SIGNATURE_STATUS="adhoc"
+elif grep -q "Authority=Apple Development:" /tmp/codesign_output.txt || grep -q "Authority=Developer ID Application:" /tmp/codesign_output.txt; then
+    echo "✅ App is properly code signed with Apple certificate"
+    SIGNATURE_STATUS="signed"
+
+    # Show certificate details
+    grep "Authority=" /tmp/codesign_output.txt | head -1
+    grep "TeamIdentifier=" /tmp/codesign_output.txt || true
+else
+    echo "❌ Unexpected signature status"
+    SIGNATURE_STATUS="unknown"
+fi
+
+# Test Gatekeeper assessment
+echo ""
+echo "🔍 Testing Gatekeeper assessment..."
+if spctl -a -vvv -t install "$APP_PATH" 2>&1 | tee /tmp/spctl_output.txt; then
+    echo "✅ App passes Gatekeeper check"
+else
+    if grep -q "no usable signature" /tmp/spctl_output.txt; then
+        echo "⚠️  App does not pass Gatekeeper (no usable signature)"
+    else
+        echo "⚠️  App does not pass Gatekeeper check"
+        cat /tmp/spctl_output.txt
+    fi
+fi
+
+rm -f /tmp/codesign_output.txt /tmp/spctl_output.txt
+
+echo ""
 echo "🚀 Launching app..."
 open "$APP_PATH"
 sleep 3
