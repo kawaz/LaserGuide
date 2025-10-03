@@ -54,10 +54,10 @@ When starting a new session, check:
 3. Keep CLAUDE.md concise (this file)
 
 ### Documentation Files
-- `README.md` - User documentation
+- `README.md` / `README.ja.md` - User documentation (synced)
 - `CONTRIBUTING.md` - Development guide
 - `CLAUDE.md` - This file (AI assistant context)
-- `.github/workflows/README.md` - CI/CD overview
+- `.github/workflows/README.md` / `README.ja.md` - CI/CD overview (synced)
 
 ### Maintenance Principles
 - **Concise over comprehensive**: Remove redundancy
@@ -84,9 +84,10 @@ When starting a new session, check:
 6. Follow "Fix and Deploy" steps
 
 ### Documentation Update
-- Update relevant .md files
-- Commit with `docs:` prefix (no release triggered)
-- Keep documentation minimal and current
+1. Update relevant .md files
+2. Run `./scripts/sync-ja-docs.sh` to sync Japanese versions
+3. Commit with `docs:` prefix (no release triggered)
+4. Keep documentation minimal and current
 
 ## Important Notes
 - **No code signing**: Builds use `CODE_SIGNING_REQUIRED=NO`
