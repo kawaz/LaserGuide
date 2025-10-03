@@ -72,7 +72,7 @@ Add these secrets to your repository:
 
 ### 3. Update Workflow
 
-The release workflows ([`03-cd-release.yml`](../.github/workflows/03-cd-release.yml) and [`04-cd-auto-release.yml`](../.github/workflows/04-cd-auto-release.yml)) would need to be updated to use these secrets instead of building with `CODE_SIGNING_REQUIRED=NO`.
+The release workflow ([`cd-auto-release-and-deploy.yml`](../.github/workflows/cd-auto-release-and-deploy.yml)) would need to be updated to use these secrets instead of building with `CODE_SIGNING_REQUIRED=NO`.
 
 ## Security Best Practices
 
@@ -81,7 +81,7 @@ The release workflows ([`03-cd-release.yml`](../.github/workflows/03-cd-release.
 1. **Never use `pull_request_target`** with secrets
 2. **Only trigger on specific events**:
    - `push` to main/master
-   - Version tag pushes (`v*.*.*`) - now automatically created by [`04-cd-auto-release.yml`](../.github/workflows/04-cd-auto-release.yml)
+   - Version tag pushes (`v*.*.*`) - now automatically created by [`cd-auto-release-and-deploy.yml`](../.github/workflows/cd-auto-release-and-deploy.yml)
    - `workflow_dispatch` (manual)
 
 3. **Restrict workflow permissions**:
@@ -93,10 +93,9 @@ The release workflows ([`03-cd-release.yml`](../.github/workflows/03-cd-release.
 ### Current Configuration
 
 Our workflows are secure:
-- [`01-ci-test.yml`](../.github/workflows/01-ci-test.yml): Runs on push/PR (no secrets)
-- [`02-cd-draft-release.yml`](../.github/workflows/02-cd-draft-release.yml): Prepares release notes (minimal permissions)
-- [`03-cd-release.yml`](../.github/workflows/03-cd-release.yml): Only runs on version tags pushed by maintainers
-- [`04-cd-auto-release.yml`](../.github/workflows/04-cd-auto-release.yml): Automatically creates version tags based on commit messages
+- [`code-quality.yml`](../.github/workflows/code-quality.yml): Runs linting and code quality checks (no secrets)
+- [`integration-tests.yml`](../.github/workflows/integration-tests.yml): Runs tests on push/PR (no secrets)
+- [`cd-auto-release-and-deploy.yml`](../.github/workflows/cd-auto-release-and-deploy.yml): Automatically creates releases, tags, and updates Homebrew tap based on commit messages
 
 ### Additional Recommendations
 
@@ -113,4 +112,4 @@ We currently build without signing because:
 - No annual fee required
 - Users just need to right-click → Open on first launch
 
-When/if we implement signing in the future, this documentation provides the complete setup process. Note that both the manual release workflow ([`03-cd-release.yml`](../.github/workflows/03-cd-release.yml)) and the automatic release workflow ([`04-cd-auto-release.yml`](../.github/workflows/04-cd-auto-release.yml)) would need to be updated to enable code signing.
+When/if we implement signing in the future, this documentation provides the complete setup process. The release workflow ([`cd-auto-release-and-deploy.yml`](../.github/workflows/cd-auto-release-and-deploy.yml)) would need to be updated to enable code signing.

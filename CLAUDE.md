@@ -36,8 +36,8 @@ Fully automated. Code changes trigger:
 ## Code Guidelines
 
 ### Key Files
-- `MouseTrackingManager.swift` - Mouse event handling (debounce pattern)
-- `LaserViewModel.swift` - Laser display logic
+- `Managers/MouseTrackingManager.swift` - Mouse event handling (debounce pattern)
+- `Models/LaserViewModel.swift` - Laser display logic
 - `Config.swift` - App configuration
 
 ### Mouse Tracking
