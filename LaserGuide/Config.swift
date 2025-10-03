@@ -21,17 +21,6 @@ struct Config {
         static let inactivityThreshold: TimeInterval = 0.3
     }
 
-    // MARK: - Window Settings
-    struct Window {
-        // Use screenSaver level to avoid being captured by screenshots
-        static let windowLevel: NSWindow.Level = NSWindow.Level(
-            rawValue: Int(CGWindowLevelForKey(.screenSaverWindow))
-        )
-        static let collectionBehavior: NSWindow.CollectionBehavior = [
-            .canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle
-        ]
-    }
-
     // MARK: - Performance Settings
     struct Performance {
         // Use Core Animation layers for better GPU utilization

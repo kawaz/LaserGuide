@@ -3,31 +3,31 @@ import SwiftUI
 
 class ScreenManager: ObservableObject {
     @Published var overlayWindows: [NSWindow] = []
-    
+
     init() {
         setupOverlays()
     }
-    
+
     func setupOverlays() {
         removeOverlays()
-        
+
         for screen in NSScreen.screens {
             let viewModel = LaserViewModel(screen: screen)
             let hostingController = NSHostingController(
                 rootView: LaserOverlayView(viewModel: viewModel, screen: screen)
                     .frame(width: screen.frame.width, height: screen.frame.height)
             )
-            
+
             let window = createOverlayWindow(for: screen)
             window.contentView = hostingController.view
             window.setFrame(screen.frame, display: true)
             window.orderFront(nil)
-            
+
             viewModel.startTracking()
             overlayWindows.append(window)
         }
     }
-    
+
     private func createOverlayWindow(for screen: NSScreen) -> NSWindow {
         let window = NSWindow(
             contentRect: screen.frame,
@@ -35,26 +35,51 @@ class ScreenManager: ObservableObject {
             backing: .buffered,
             defer: false
         )
-        
+
+        // 基本設定
         window.backgroundColor = .clear
         window.isOpaque = false
-        window.level = Config.Window.windowLevel
-        window.collectionBehavior = Config.Window.collectionBehavior
-        window.ignoresMouseEvents = true
         window.hasShadow = false
-        
-        // Exclude from screenshots by setting sharing type
+        window.ignoresMouseEvents = true
+
+        // パフォーマンス最適化
+        window.displaysWhenScreenProfileChanges = false
+        window.allowsConcurrentViewDrawing = true
+
+        // スクリーンショット除外
         window.sharingType = .none
-        
-        // Enable Core Animation layer for better GPU performance
+
+        // Core Animation設定
         if Config.Performance.useCoreAnimationLayers {
             window.contentView?.wantsLayer = true
-            window.contentView?.layer?.isOpaque = false
+
+            if let layer = window.contentView?.layer {
+                layer.isOpaque = false
+                layer.drawsAsynchronously = true
+                layer.contentsScale = window.backingScaleFactor
+
+                // Metal レンダリング（最新の最適化）
+                if #available(macOS 10.14, *) {
+                    layer.contentsFormat = .RGBA8Uint  // または .RGBA16Float for HDR
+                    // layer.acceleratesDisplay = true  // これも非推奨の可能性
+                }
+            }
         }
-        
+
+        // レベルとビヘイビア
+        window.level = NSWindow.Level(
+            rawValue: Int(CGWindowLevelForKey(.assistiveTechHighWindow))
+        )
+        window.collectionBehavior = [
+            .canJoinAllSpaces,
+            .fullScreenAuxiliary,
+            .ignoresCycle,
+            .stationary
+        ]
+
         return window
     }
-    
+
     func removeOverlays() {
         for window in overlayWindows {
             if let contentView = window.contentViewController as? NSHostingController<LaserOverlayView> {

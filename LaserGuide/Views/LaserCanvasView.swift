@@ -1,218 +1,291 @@
 // LaserCanvasView.swift
 import SwiftUI
+import simd
 
 struct LaserCanvasView: View {
     @ObservedObject var viewModel: LaserViewModel
-    let screen: NSScreen
-    
+    private let screenBounds: CGRect
+    private let screenSize: CGSize
+    private let corners: [SIMD2<Float>]
+
+    private enum Constants {
+        static let cornerWidth: CGFloat = 8.0
+        static let targetWidth: CGFloat = 0.5
+        static let indicatorOffset: CGFloat = 30.0
+        static let indicatorFontSize: CGFloat = 16.0
+        static let maxPercentage: Double = 999.0
+        static let minimumDistance: CGFloat = 1.0
+    }
+
+    init(viewModel: LaserViewModel, screen: NSScreen) {
+        self.viewModel = viewModel
+        self.screenBounds = screen.frame
+        self.screenSize = screen.frame.size
+
+        // 事前計算されたコーナー座標
+        self.corners = [
+            SIMD2(0, 0),
+            SIMD2(Float(screenSize.width), 0),
+            SIMD2(0, Float(screenSize.height)),
+            SIMD2(Float(screenSize.width), Float(screenSize.height))
+        ]
+    }
+
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                Color.clear
-                
-                // Always use Metal-optimized rendering
-                Canvas { context, size in
-                    drawLasers(context: context, size: size)
-                }
-                .drawingGroup(opaque: false, colorMode: .nonLinear) // Enhanced Metal optimization
-                
-                // Distance indicators for off-screen cursor
-                let indicators = getDistanceIndicators(size: geometry.size)
-                ForEach(indicators, id: \.corner) { indicator in
-                    Text("\(Int(indicator.percentage))%")
-                        .font(.system(size: 16, weight: .bold, design: .monospaced))
-                        .foregroundColor(.white)
-                        .shadow(color: .black, radius: 2, x: 1, y: 1)
-                        .position(indicator.position)
-                        .drawingGroup() // GPU render text too
-                }
-            }
-        }
-    }
-    
-    struct DistanceIndicator {
-        let corner: CGPoint
-        let position: CGPoint
-        let percentage: Double
-    }
-    
-    private func getDistanceIndicators(size: CGSize) -> [DistanceIndicator] {
-        var indicators: [DistanceIndicator] = []
-        
-        let corners = [
-            CGPoint(x: 0, y: 0),
-            CGPoint(x: size.width, y: 0),
-            CGPoint(x: 0, y: size.height),
-            CGPoint(x: size.width, y: size.height)
-        ]
-        
-        let globalMouseLocation = viewModel.currentMouseLocation
-        
-        // Convert to local coordinates
-        let localX = globalMouseLocation.x - screen.frame.minX
-        let localY = globalMouseLocation.y - screen.frame.minY
-        let convertedY = screen.frame.height - localY
-        let targetPoint = CGPoint(x: localX, y: convertedY)
-        
-        // Check if cursor is outside screen bounds
-        if targetPoint.x < 0 || targetPoint.x > size.width || targetPoint.y < 0 || targetPoint.y > size.height {
-            for corner in corners {
-                // Calculate intersection point with screen edge
-                let intersection = calculateScreenEdgeIntersection(from: corner, target: targetPoint, screenSize: size)
-                
-                if let intersectionPoint = intersection {
-                    // Calculate distance from intersection to actual cursor position
-                    let intersectionDistance = hypot(
-                        targetPoint.x - intersectionPoint.x,
-                        targetPoint.y - intersectionPoint.y
-                    )
-                    let visibleDistance = hypot(intersectionPoint.x - corner.x, intersectionPoint.y - corner.y)
-                    
-                    // Calculate percentage (visible distance vs remaining distance)
-                    let percentage = (intersectionDistance / visibleDistance) * 100
-                    
-                    // Position text slightly inside the screen from intersection point
-                    let offset: CGFloat = 30
-                    var textPosition = intersectionPoint
-                    
-                    // Adjust position based on which edge
-                    if intersectionPoint.x <= 0 {
-                        textPosition.x = offset
-                    } else if intersectionPoint.x >= size.width {
-                        textPosition.x = size.width - offset
-                    }
-                    
-                    if intersectionPoint.y <= 0 {
-                        textPosition.y = offset
-                    } else if intersectionPoint.y >= size.height {
-                        textPosition.y = size.height - offset
-                    }
-                    
-                    indicators.append(DistanceIndicator(
-                        corner: corner,
-                        position: textPosition,
-                        percentage: min(percentage, 999) // Cap at 999%
-                    ))
-                }
-            }
-        }
-        
-        return indicators
-    }
-    
-    private func calculateScreenEdgeIntersection(from: CGPoint, target: CGPoint, screenSize: CGSize) -> CGPoint? {
-        let deltaX = target.x - from.x
-        let deltaY = target.y - from.y
-        
-        // If no movement, return nil
-        if deltaX == 0 && deltaY == 0 {
-            return nil
-        }
-        
-        var tMin: CGFloat = 0
-        var tMax: CGFloat = 1
-        
-        // Check intersection with each edge
-        // Left edge (x = 0)
-        if deltaX != 0 {
-            let t1 = (0 - from.x) / deltaX
-            let t2 = (screenSize.width - from.x) / deltaX
-            
-            tMin = max(tMin, min(t1, t2))
-            tMax = min(tMax, max(t1, t2))
-        }
-        
-        // Top/bottom edges (y = 0 or height)
-        if deltaY != 0 {
-            let t1 = (0 - from.y) / deltaY
-            let t2 = (screenSize.height - from.y) / deltaY
-            
-            tMin = max(tMin, min(t1, t2))
-            tMax = min(tMax, max(t1, t2))
-        }
-        
-        // If tMin > tMax, no intersection
-        if tMin > tMax {
-            return nil
-        }
-        
-        // Use tMax for the intersection point (where line exits the screen)
-        if tMax >= 0 && tMax <= 1 {
-            return CGPoint(
-                x: from.x + deltaX * tMax,
-                y: from.y + deltaY * tMax
+        Canvas { context, size in
+            // 座標変換は一度だけ
+            let targetPoint = convertToLocalCoordinates(viewModel.currentMouseLocation)
+            let targetSIMD = SIMD2<Float>(Float(targetPoint.x), Float(targetPoint.y))
+
+            // グラデーション事前作成
+            let gradient = Gradient(stops: Config.Visual.gradientStops)
+
+            // レーザー描画
+            drawAllLasers(
+                context: context,
+                target: targetPoint,
+                targetSIMD: targetSIMD,
+                gradient: gradient
             )
+
+            // 画面外の場合のみインジケータ描画
+            if isOffScreen(targetPoint, size: size) {
+                drawDistanceIndicators(
+                    context: context,
+                    target: targetPoint,
+                    targetSIMD: targetSIMD,
+                    size: size
+                )
+            }
         }
-        
-        return nil
+        .drawingGroup(opaque: false, colorMode: .nonLinear) // Metal最適化
     }
-    
-    private func drawLasers(context: GraphicsContext, size: CGSize) {
-        let corners = [
-            CGPoint(x: 0, y: 0),
-            CGPoint(x: size.width, y: 0),
-            CGPoint(x: 0, y: size.height),
-            CGPoint(x: size.width, y: size.height)
-        ]
-        
-        let globalMouseLocation = viewModel.currentMouseLocation
-        
-        // Convert to local coordinates
-        let localX = globalMouseLocation.x - screen.frame.minX
-        let localY = globalMouseLocation.y - screen.frame.minY
-        let convertedY = screen.frame.height - localY
-        let targetPoint = CGPoint(x: localX, y: convertedY)
-        
-        // Pre-create gradient for reuse
-        let gradient = Gradient(stops: Config.Visual.gradientStops)
-        
-        // Batch draw all lasers
+
+    @inline(__always)
+    private func convertToLocalCoordinates(_ globalLocation: NSPoint) -> CGPoint {
+        let localX = globalLocation.x - screenBounds.minX
+        let localY = globalLocation.y - screenBounds.minY
+        let convertedY = screenSize.height - localY
+        return CGPoint(x: localX, y: convertedY)
+    }
+
+    @inline(__always)
+    private func isOffScreen(_ point: CGPoint, size: CGSize) -> Bool {
+        point.x < 0 || point.x > size.width ||
+        point.y < 0 || point.y > size.height
+    }
+
+    private func drawAllLasers(
+        context: GraphicsContext,
+        target: CGPoint,
+        targetSIMD: SIMD2<Float>,
+        gradient: Gradient
+    ) {
         for corner in corners {
-            // Skip if target is too close to corner (optimization)
-            let deltaX = targetPoint.x - corner.x
-            let deltaY = targetPoint.y - corner.y
-            let length = hypot(deltaX, deltaY)
-            
-            guard length > 1.0 else { continue }
-            
-            // Create tapered path efficiently
-            let path = createLaserPath(from: corner, target: targetPoint, distance: length, deltaX: deltaX, deltaY: deltaY)
-            
-            // Apply gradient fill
+            let delta = targetSIMD - corner
+            let distance = length(delta)
+
+            // 最小距離チェック
+            guard distance > Float(Constants.minimumDistance) else { continue }
+
+            // パス作成（SIMD最適化）
+            let path = createOptimizedLaserPath(
+                from: corner,
+                to: targetSIMD,
+                delta: delta,
+                distance: distance
+            )
+
+            // グラデーション描画
             context.fill(
                 path,
                 with: .linearGradient(
                     gradient,
-                    startPoint: corner,
-                    endPoint: targetPoint
+                    startPoint: CGPoint(x: CGFloat(corner.x), y: CGFloat(corner.y)),
+                    endPoint: target
                 )
             )
         }
     }
-    
+
     @inline(__always)
-    private func createLaserPath(from corner: CGPoint, target: CGPoint, distance: CGFloat, deltaX: CGFloat, deltaY: CGFloat) -> Path {
-        Path { pathBuilder in
-            // Normalize and create perpendicular vector
-            let perpX = -deltaY / distance
-            let perpY = deltaX / distance
-            
-            // Width at corner (thick) and at target (thin)
-            let cornerWidth: CGFloat = 8.0
-            let targetWidth: CGFloat = 0.5
-            
-            // Create trapezoid points
-            let corner1 = CGPoint(x: corner.x + perpX * cornerWidth, y: corner.y + perpY * cornerWidth)
-            let corner2 = CGPoint(x: corner.x - perpX * cornerWidth, y: corner.y - perpY * cornerWidth)
-            let target1 = CGPoint(x: target.x + perpX * targetWidth, y: target.y + perpY * targetWidth)
-            let target2 = CGPoint(x: target.x - perpX * targetWidth, y: target.y - perpY * targetWidth)
-            
-            // Draw trapezoid
-            pathBuilder.move(to: corner1)
-            pathBuilder.addLine(to: target1)
-            pathBuilder.addLine(to: target2)
-            pathBuilder.addLine(to: corner2)
-            pathBuilder.closeSubpath()
+    private func createOptimizedLaserPath(
+        from corner: SIMD2<Float>,
+        to target: SIMD2<Float>,
+        delta: SIMD2<Float>,
+        distance: Float
+    ) -> Path {
+        Path { path in
+            // 正規化された垂直ベクトル
+            let normalized = delta / distance
+            let perpendicular = SIMD2<Float>(-normalized.y, normalized.x)
+
+            // 幅の計算
+            let cornerWidth = Float(Constants.cornerWidth)
+            let targetWidth = Float(Constants.targetWidth)
+
+            // 台形の頂点計算（SIMD演算）
+            let c1 = corner + perpendicular * cornerWidth
+            let c2 = corner - perpendicular * cornerWidth
+            let t1 = target + perpendicular * targetWidth
+            let t2 = target - perpendicular * targetWidth
+
+            // パス構築
+            path.move(to: CGPoint(x: CGFloat(c1.x), y: CGFloat(c1.y)))
+            path.addLine(to: CGPoint(x: CGFloat(t1.x), y: CGFloat(t1.y)))
+            path.addLine(to: CGPoint(x: CGFloat(t2.x), y: CGFloat(t2.y)))
+            path.addLine(to: CGPoint(x: CGFloat(c2.x), y: CGFloat(c2.y)))
+            path.closeSubpath()
         }
+    }
+
+    private func drawDistanceIndicators(
+        context: GraphicsContext,
+        target: CGPoint,
+        targetSIMD: SIMD2<Float>,
+        size: CGSize
+    ) {
+        let indicators = calculateIndicators(
+            target: target,
+            targetSIMD: targetSIMD,
+            size: size
+        )
+
+        for indicator in indicators {
+            // Shadow効果付きテキスト描画
+            var text = context.resolve(
+                Text("\(Int(indicator.percentage))%")
+                    .font(.system(
+                        size: Constants.indicatorFontSize,
+                        weight: .bold,
+                        design: .monospaced
+                    ))
+                    .foregroundColor(.white)
+            )
+
+            // 影を追加
+            context.drawLayer { ctx in
+                // 黒い影
+                ctx.opacity = 0.5
+                ctx.draw(text, at: CGPoint(
+                    x: indicator.position.x + 1,
+                    y: indicator.position.y + 1
+                ))
+            }
+
+            // 本体のテキスト
+            context.draw(text, at: indicator.position)
+        }
+    }
+
+    private func calculateIndicators(
+        target: CGPoint,
+        targetSIMD: SIMD2<Float>,
+        size: CGSize
+    ) -> [DistanceIndicator] {
+        var indicators: [DistanceIndicator] = []
+
+        for corner in corners {
+            if let intersection = calculateScreenEdgeIntersection(
+                from: corner,
+                to: targetSIMD,
+                screenSize: size
+            ) {
+                // 距離計算
+                let visibleDistance = length(intersection - corner)  // 画面内の距離
+                let intersectionDistance = length(targetSIMD - intersection)  // 画面外の距離
+                let totalDistance = length(targetSIMD - corner)  // 全体の距離
+
+                // 画面内の距離 ÷ 全体の距離
+                let percentage = Double(visibleDistance / totalDistance) * 100
+
+                // テキスト位置計算
+                let textPosition = calculateTextPosition(
+                    intersection: CGPoint(x: CGFloat(intersection.x), y: CGFloat(intersection.y)),
+                    size: size
+                )
+
+                indicators.append(DistanceIndicator(
+                    corner: CGPoint(x: CGFloat(corner.x), y: CGFloat(corner.y)),
+                    position: textPosition,
+                    percentage: min(percentage, Constants.maxPercentage)
+                ))
+            }
+        }
+
+        return indicators
+    }
+
+    @inline(__always)
+    private func calculateScreenEdgeIntersection(
+        from: SIMD2<Float>,
+        to: SIMD2<Float>,
+        screenSize: CGSize
+    ) -> SIMD2<Float>? {
+        let delta = to - from
+
+        // 移動なしの場合
+        if length_squared(delta) < 0.001 { return nil }
+
+        var tMin: Float = 0
+        var tMax: Float = 1
+
+        let screenWidth = Float(screenSize.width)
+        let screenHeight = Float(screenSize.height)
+
+        // X軸の交差チェック
+        if delta.x != 0 {
+            let t1 = (0 - from.x) / delta.x
+            let t2 = (screenWidth - from.x) / delta.x
+
+            tMin = max(tMin, min(t1, t2))
+            tMax = min(tMax, max(t1, t2))
+        }
+
+        // Y軸の交差チェック
+        if delta.y != 0 {
+            let t1 = (0 - from.y) / delta.y
+            let t2 = (screenHeight - from.y) / delta.y
+
+            tMin = max(tMin, min(t1, t2))
+            tMax = min(tMax, max(t1, t2))
+        }
+
+        // 交差なし
+        if tMin > tMax { return nil }
+
+        // 交点を返す
+        if tMax >= 0 && tMax <= 1 {
+            return from + delta * tMax
+        }
+
+        return nil
+    }
+
+    @inline(__always)
+    private func calculateTextPosition(intersection: CGPoint, size: CGSize) -> CGPoint {
+        var position = intersection
+        let offset = Constants.indicatorOffset
+
+        // エッジからオフセット
+        if intersection.x <= 0 {
+            position.x = offset
+        } else if intersection.x >= size.width {
+            position.x = size.width - offset
+        }
+
+        if intersection.y <= 0 {
+            position.y = offset
+        } else if intersection.y >= size.height {
+            position.y = size.height - offset
+        }
+
+        return position
+    }
+
+    struct DistanceIndicator {
+        let corner: CGPoint
+        let position: CGPoint
+        let percentage: Double
     }
 }

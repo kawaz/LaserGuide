@@ -11,15 +11,12 @@ class MouseTrackingManager: ObservableObject {
 
     // MARK: - Private Properties
     private var mouseMoveMonitor: Any?
-    private var lastUpdateTime: Date = .init()
     private var debounceWorkItem: DispatchWorkItem?
 
     // MARK: - Singleton
     static let shared = MouseTrackingManager()
 
-    private init() {
-        setupMouseTracking()
-    }
+    private init() {}
 
     // MARK: - Public Methods
 
@@ -41,59 +38,30 @@ class MouseTrackingManager: ObservableObject {
 
     // MARK: - Private Methods
 
-    private func setupMouseTracking() {
-        // 初期化時にマウス位置を取得
-        currentMouseLocation = NSEvent.mouseLocation
-    }
-
     private func setupGlobalMouseMonitor() {
-        // グローバルマウスイベントを監視
-        // マウスの実際の移動のみを検出（スクロールの慣性は無視）
+        // マウスの移動を監視する
+        // - ドラッグ中は mouseMoved の代わりに *Dragged イベントが発生するのでそちらも監視する
         mouseMoveMonitor = NSEvent.addGlobalMonitorForEvents(
             matching: [.mouseMoved, .leftMouseDragged, .rightMouseDragged, .otherMouseDragged]
         ) { [weak self] _ in
-            guard let self = self else { return }
-
-            let location = NSEvent.mouseLocation
-
-            // メインスレッドで状態を更新
             DispatchQueue.main.async {
-                self.updateMouseLocation(location)
+                self?.updateMouseLocation(NSEvent.mouseLocation)
             }
         }
     }
 
     private func updateMouseLocation(_ location: CGPoint) {
         currentMouseLocation = location
-        lastUpdateTime = Date()
-
-        // レーザーを表示
-        if !isMouseActive {
-            isMouseActive = true
-        }
-
-        // Debounce: 前回のhide処理をキャンセルして新しくスケジュール
+        isMouseActive = true
         scheduleHideWithDebounce()
     }
 
     private func scheduleHideWithDebounce() {
-        // 既存のワークアイテムをキャンセル
         debounceWorkItem?.cancel()
-
-        // 新しいワークアイテムを作成
         let workItem = DispatchWorkItem { [weak self] in
-            guard let self = self else { return }
-
-            // 最後の更新から指定時間経過していたら非表示
-            let timeSinceLastUpdate = Date().timeIntervalSince(self.lastUpdateTime)
-            if timeSinceLastUpdate >= Config.Timing.inactivityThreshold {
-                self.isMouseActive = false
-            }
+            self?.isMouseActive = false
         }
-
         debounceWorkItem = workItem
-
-        // 指定時間後に実行
         DispatchQueue.main.asyncAfter(
             deadline: .now() + Config.Timing.inactivityThreshold,
             execute: workItem
