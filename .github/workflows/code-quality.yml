@@ -37,7 +37,9 @@ jobs:
           -derivedDataPath build \
           analyze \
           CLANG_STATIC_ANALYZER_MODE=deep \
-          RUN_CLANG_STATIC_ANALYZER=YES
+          RUN_CLANG_STATIC_ANALYZER=YES \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO
     
     - name: Memory Leak Detection Build
       run: |
@@ -48,7 +50,9 @@ jobs:
           -derivedDataPath build-asan \
           build \
           ENABLE_ADDRESS_SANITIZER=YES \
-          ENABLE_UNDEFINED_BEHAVIOR_SANITIZER=YES
+          ENABLE_UNDEFINED_BEHAVIOR_SANITIZER=YES \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO
     
     - name: Performance Monitoring Setup
       run: |

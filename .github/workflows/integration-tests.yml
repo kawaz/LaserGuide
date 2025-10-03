@@ -21,14 +21,16 @@ jobs:
     - name: Run Unit Tests
       run: |
         echo "🧪 Checking if test target exists..."
-        
+
         # Try to run tests and handle the case where no test target is configured
         if xcodebuild test \
           -project LaserGuide.xcodeproj \
           -scheme LaserGuide \
           -destination 'platform=macOS' \
           -derivedDataPath build \
-          -enableCodeCoverage YES 2>&1 | tee test_output.log; then
+          -enableCodeCoverage YES \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO 2>&1 | tee test_output.log; then
           echo "✅ Tests completed successfully"
         else
           # Check if the error is due to no test target configured
@@ -42,7 +44,7 @@ jobs:
             exit 1
           fi
         fi
-        
+
         # Clean up
         rm -f test_output.log
     
@@ -50,9 +52,9 @@ jobs:
       run: |
         # Test that all required files exist for CI/CD
         echo "🔍 Checking CI/CD pipeline components..."
-        
+
         # Check workflow files
-        test -f .github/workflows/04-cd-auto-release-and-deploy.yml || (echo "❌ CD workflow missing" && exit 1)
+        test -f .github/workflows/cd-auto-release-and-deploy.yml || (echo "❌ CD workflow missing" && exit 1)
         test -f .github/workflows/code-quality.yml || (echo "❌ Code quality workflow missing" && exit 1)
         
         # Check Cask file
