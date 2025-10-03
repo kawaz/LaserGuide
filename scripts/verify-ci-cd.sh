@@ -38,7 +38,13 @@ while [ $elapsed -lt $TIMEOUT ]; do
         tag=$(echo "$latest_release" | jq -r '.tagName')
         published=$(echo "$latest_release" | jq -r '.publishedAt')
         echo "✅ Latest release: $tag (published: $published)"
-        
+
+        # Test Homebrew installation
+        echo ""
+        echo "🧪 Running Homebrew installation test..."
+        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        env -i PATH="$PATH" HOME="$HOME" USER="$USER" SHELL="$SHELL" "$SCRIPT_DIR/test-install.sh"
+
         exit 0
     fi
     

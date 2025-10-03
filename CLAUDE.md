@@ -71,9 +71,8 @@ When starting a new session, check:
 1. Make code changes
 2. Commit with conventional prefix
 3. Push to main
-4. Run `./scripts/verify-ci-cd.sh`
-5. Run `./scripts/test-install.sh`
-6. Verify functionality
+4. Run `./scripts/verify-ci-cd.sh` (includes CI/CD verification and Homebrew installation test)
+5. Verify functionality
 
 ### Add Feature
 1. Create worktree if complex: `git worktree add .worktrees/feature-name -b feature/feature-name`
@@ -83,14 +82,8 @@ When starting a new session, check:
 5. Clean up worktree
 6. Follow "Fix and Deploy" steps
 
-### Documentation Update
-1. Update relevant .md files
-2. Run `./scripts/sync-ja-docs.sh` to sync Japanese versions
-3. Commit with `docs:` prefix (no release triggered)
-4. Keep documentation minimal and current
-
 ## Important Notes
-- **No code signing**: Builds use `CODE_SIGNING_REQUIRED=NO`
+- **Code signing**: Enabled with Apple Development certificate (reduces Gatekeeper warnings)
 - **Homebrew tap**: Separate repository `kawaz/homebrew-laserguide`
 - **Test scripts**: Use provided scripts to avoid repetitive work
 - **Keep this file short**: Remove outdated information regularly
