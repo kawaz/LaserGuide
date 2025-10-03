@@ -1,187 +1,95 @@
 # AI Assistant Guidelines for LaserGuide
 
-This document provides context and guidelines for AI assistants working on the LaserGuide project.
+LaserGuide: macOS app displaying laser lines from screen corners to mouse cursor.
 
-## Project Overview
+## Quick Reference
 
-LaserGuide is a macOS app that displays laser lines from screen corners to the mouse cursor, helping users locate their cursor on large or multiple displays.
+### Testing After Changes
+```bash
+# After push to main
+./scripts/verify-ci-cd.sh    # Wait for CI/CD completion
+./scripts/test-install.sh     # Install via Homebrew and test
+```
 
-## Development Workflow
+### Development Workflow
+- **Direct commits to main**: For simple fixes
+- **Feature branches with worktrees**: For complex features only
+- **Conventional commits**: `feat:` (minor bump) / `fix:` (patch bump) / `docs:` (no release)
 
-### Branch Management
-- **Use feature branches**: For any significant changes, create a feature branch
-- **Use git worktree**: Don't switch branches in main project directory
-  ```bash
-  # Create new worktree for feature
-  git worktree add .worktrees/feature-name -b feature/feature-name
+### Project Structure
+- `LaserGuide/` - Swift source code
+- `scripts/` - Test automation scripts
+- `Casks/` - Homebrew cask template
+- `.github/workflows/` - CI/CD automation
 
-  # Work in the worktree directory
-  cd .worktrees/feature-name
+## Automated Systems
 
-  # After merge, clean up
-  git worktree remove .worktrees/feature-name
-  git branch -d feature/feature-name
-  ```
-- **Update workspace file**: When creating worktree, update [`.code-workspace`](LaserGuide.code-workspace) to include the new directory
-- **Get approval before merge**: Explain changes to human and get confirmation before merging to main
+### CI/CD Pipeline
+Push to main → Build/Test → Version bump (if code changed) → Release → Update Homebrew tap
 
-### Commit Practices
-- **Always create appropriate commits**: Make atomic commits with clear messages
-- **Use conventional commits**: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`
-- **Commit regularly**: Don't accumulate too many changes in a single commit
+### Release Process
+Fully automated. Code changes trigger:
+1. Version determination from commit messages
+2. Build and create GitHub release
+3. Update `kawaz/homebrew-laserguide` repository
 
-### Version Management
-- **Automatic versioning**: PRs merged to main trigger automatic releases
-- **Version determination**:
-  - `feat:` → minor version bump
-  - Other code changes → patch version bump
-  - Documentation-only changes → no release
+## Code Guidelines
 
-### Testing Changes
-- **Use `make dev`**: Build and run the debug version to test changes
-- **Check for existing functionality**: Before making changes, understand current behavior
+### Key Files
+- `MouseTrackingManager.swift` - Mouse event handling (debounce pattern)
+- `LaserViewModel.swift` - Laser display logic
+- `Config.swift` - App configuration
+
+### Mouse Tracking
+- Monitor: `.mouseMoved`, `.leftMouseDragged`, `.rightMouseDragged`, `.otherMouseDragged`
+- **Do not** monitor: `.scrollWheel` (prevents inertia scroll issues)
+- Use `DispatchWorkItem` for debounce (not `Timer`)
 
 ## Documentation Maintenance
 
-### Keep Documentation in Sync
-When making code changes, always check and update:
-1. `README.md` - User-facing features and build instructions
-2. `CONTRIBUTING.md` - Development workflow changes
-3. `CHANGELOG.md` - Notable changes (updated automatically by release workflow)
-4. `.github/workflows/README.md` - Workflow changes
-5. `docs/code-signing.md` - Security or signing-related changes
+### Regular Cleanup Tasks
+When starting a new session, check:
+1. Remove obsolete files/directories
+2. Update outdated documentation
+3. Keep CLAUDE.md concise (this file)
 
-### Documentation Principles
-- **Single source of truth**: Avoid duplicating content across files
-- **Cross-reference**: Link between documents rather than duplicating
-- **Keep current**: Update docs in the same commit as code changes
-- **Consider the audience**: README for users, CONTRIBUTING for developers
+### Documentation Files
+- `README.md` - User documentation
+- `CONTRIBUTING.md` - Development guide
+- `CLAUDE.md` - This file (AI assistant context)
+- `.github/workflows/README.md` - CI/CD overview
 
-## Code Organization
-
-### Project Structure
-```
-LaserGuide/
-├── LaserGuide/          # Swift source code
-│   ├── Views/            # SwiftUI views
-│   ├── Models/           # View models and data models
-│   ├── Managers/         # Business logic managers
-│   └── Config/           # Configuration constants
-├── .github/workflows/    # CI/CD automation
-├── Casks/                # Homebrew cask
-├── docs/                 # Technical documentation
-└── Makefile             # Build automation
-```
-
-### Key Files
-- [`LaserViewModel.swift`](LaserGuide/Models/LaserViewModel.swift) - Core laser display logic
-- [`Config.swift`](LaserGuide/Config.swift) - App configuration constants
-- [`Makefile`](Makefile) - Build and release commands
-- [`Casks/laserguide.rb`](Casks/laserguide.rb) - Homebrew distribution
-
-## Release Process
-
-### Automated Releases
-1. Code changes pushed to main are automatically detected
-2. Version is determined by commit messages
-3. Tag is created automatically
-4. App is built and released with versioned zip file
-5. Homebrew Cask is updated automatically
-
-### Manual Controls
-- `make version-patch/minor/major` - Manual version control
-- Useful for specific version requirements
-
-## Current State Notes
-
-### Code Signing
-- **Currently disabled**: Builds use `CODE_SIGNING_REQUIRED=NO`
-- **Documentation exists**: See [`docs/code-signing.md`](docs/code-signing.md) for future implementation
-- **Reason**: Easier distribution for open source project
-
-### Workflows
-1. [`01-ci-test.yml`](.github/workflows/01-ci-test.yml) - Tests on every push
-2. [`04-cd-auto-release-and-deploy.yml`](.github/workflows/04-cd-auto-release-and-deploy.yml) - Auto-versions, builds, and deploys on main push
-
-## Guidelines for Changes
-
-### Before Making Changes
-1. Understand the current implementation
-2. Check if similar functionality exists
-3. Consider impact on existing features
-
-### When Making Changes
-1. Test locally with `make dev`
-2. Update relevant documentation
-3. Create clear, atomic commits
-4. Ensure CI/CD compatibility
-
-### After Making Changes
-1. Verify documentation is updated
-2. Check that workflows still function
-3. Ensure Makefile targets work correctly
-- **Always verify the necessity of deleting unnecessary files and updating documents after refactoring**
+### Maintenance Principles
+- **Concise over comprehensive**: Remove redundancy
+- **Actionable over explanatory**: Focus on what to do
+- **Current over complete**: Delete outdated content
+- **Automated over manual**: Use scripts for repetitive tasks
 
 ## Common Tasks
 
-### Adding New Features
-1. Create feature branch with worktree:
-   ```bash
-   git worktree add .worktrees/feature-name -b feature/feature-name
-   cd .worktrees/feature-name
-   ```
-2. Update [`.code-workspace`](LaserGuide.code-workspace) to include new worktree
-3. Implement in appropriate manager/view
-4. Update [`Config.swift`](LaserGuide/Config.swift) if adding settings
-5. Test with `make dev`
-6. Update README.md features section
-7. Commit with `feat:` prefix
-8. Push branch and explain changes to human
-9. After approval, merge to main
-10. Clean up worktree:
-    ```bash
-    cd ../..
-    git worktree remove .worktrees/feature-name
-    git branch -d feature/feature-name
-    ```
+### Fix and Deploy
+1. Make code changes
+2. Commit with conventional prefix
+3. Push to main
+4. Run `./scripts/verify-ci-cd.sh`
+5. Run `./scripts/test-install.sh`
+6. Verify functionality
 
-### Fixing Bugs
-1. For simple fixes: work directly on main
-2. For complex fixes: use feature branch with worktree
-3. Identify root cause
-4. Fix with minimal changes
-5. Test the fix
-6. Commit with `fix:` prefix
+### Add Feature
+1. Create worktree if complex: `git worktree add .worktrees/feature-name -b feature/feature-name`
+2. Implement and test locally
+3. Commit with `feat:` prefix
+4. Merge to main
+5. Clean up worktree
+6. Follow "Fix and Deploy" steps
 
-### Updating Documentation
-1. Make changes to relevant .md files
-2. Ensure consistency across docs
-3. Commit with `docs:` prefix (won't trigger release)
+### Documentation Update
+- Update relevant .md files
+- Commit with `docs:` prefix (no release triggered)
+- Keep documentation minimal and current
 
-## Important Reminders
-
-- **Branch discipline**: Always use worktrees for feature branches, never switch in main directory
-- **Human approval**: Get confirmation before merging significant changes to main
-- **Workspace maintenance**: Update `.code-workspace` when creating/removing worktrees
-- **Cleanup after refactoring**: Always check for files that become unnecessary after refactoring and remove them
-- **Documentation consistency**: Update all affected documentation when making changes
-- **Remove worktrees**: Delete worktrees after features are merged
-- **Documentation reviews**: Regularly check that docs match implementation
-- **Workflow updates**: Test workflow changes carefully
-- **Breaking changes**: Currently treated as minor version bumps
-- **Security**: Never commit secrets or API keys
-- **Code style**: Follow existing Swift patterns and conventions
-
-## Questions to Ask
-
-When starting a new session, consider asking:
-1. "What's the current status of the project?"
-2. "Are there any pending changes or issues?"
-3. "Has the release process changed?"
-4. "Are there any new requirements or constraints?"
-
-## Memories
-
-- LaserGuide.code-workspace を読もうとして失敗して諦めてたけど、無ければ作るようにして
-
-This document should be updated whenever significant changes are made to the project structure, workflows, or development practices.
+## Important Notes
+- **No code signing**: Builds use `CODE_SIGNING_REQUIRED=NO`
+- **Homebrew tap**: Separate repository `kawaz/homebrew-laserguide`
+- **Test scripts**: Use provided scripts to avoid repetitive work
+- **Keep this file short**: Remove outdated information regularly
