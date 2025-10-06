@@ -15,7 +15,9 @@ brew untap "$TAP_NAME" 2>/dev/null || true
 brew tap "$TAP_NAME"
 
 echo "📦 Installing $APP_NAME..."
-brew install --cask laserguide --no-quarantine
+# 環境変数をクリアして一般的なインストール環境を再現
+unset HOMEBREW_CASK_OPTS
+brew install --cask laserguide
 
 echo "✅ Installation complete"
 
