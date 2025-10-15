@@ -56,14 +56,11 @@ extension ScreenInfo {
     }
 
     var name: String {
-        if let info = CoreDisplay_DisplayCreateInfoDictionary(displayID)?.takeRetainedValue() as? [String: Any],
-           let names = info["DisplayProductName"] as? [String: String],
-           let name = names["en_US"] ?? names.values.first {
-            return name
+        // Use screen's localized name
+        let localizedName = screen.localizedName
+        if !localizedName.isEmpty {
+            return localizedName
         }
         return isBuiltIn ? "Built-in Display" : "External Display"
     }
 }
-
-@_silgen_name("CoreDisplay_DisplayCreateInfoDictionary")
-private func CoreDisplay_DisplayCreateInfoDictionary(_ display: CGDirectDisplayID) -> Unmanaged<CFDictionary>?
