@@ -176,6 +176,9 @@ jobs:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: |
           set -e
+          VERSION="${{ steps.version_bump.outputs.version_number }}"
+          echo "Building version $VERSION"
+
           xcodebuild -scheme LaserGuide \
             -configuration Release \
             -derivedDataPath ./build \
@@ -185,7 +188,9 @@ jobs:
             DEVELOPMENT_TEAM="$APPLE_DEVELOPMENT_TEAM" \
             CODE_SIGN_IDENTITY="$APPLE_SIGNING_IDENTITY" \
             CODE_SIGNING_REQUIRED=YES \
-            CODE_SIGN_STYLE=Manual
+            CODE_SIGN_STYLE=Manual \
+            MARKETING_VERSION="$VERSION" \
+            CURRENT_PROJECT_VERSION="$VERSION"
 
       - name: Verify Code Signature
         if: steps.check_changes.outputs.skip_release != 'true'
