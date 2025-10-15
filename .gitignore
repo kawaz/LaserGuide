@@ -114,6 +114,9 @@ Temporary Items
 
 # Build output
 build/
+build-local/
+build-test/
+build-release/
 *.zip
 export-options.plist
 /.worktrees/

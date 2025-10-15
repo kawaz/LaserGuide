@@ -6,6 +6,9 @@ LaserGuide: macOS app displaying laser lines from screen corners to mouse cursor
 
 ### Testing After Changes
 ```bash
+# LOCAL development (quick iteration)
+./scripts/dev-run.sh          # Build and run locally
+
 # BEFORE pushing to main (catches build errors locally)
 ./scripts/pre-push-test.sh    # Run same build tests as CI
 
