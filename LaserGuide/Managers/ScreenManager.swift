@@ -3,6 +3,7 @@ import SwiftUI
 
 class ScreenManager: ObservableObject {
     @Published var overlayWindows: [NSWindow] = []
+    private(set) var screenInfos: [ScreenInfo] = []
 
     init() {
         setupOverlays()
@@ -11,8 +12,12 @@ class ScreenManager: ObservableObject {
     func setupOverlays() {
         removeOverlays()
 
-        for screen in NSScreen.screens {
-            let viewModel = LaserViewModel(screen: screen)
+        // Build screen info cache
+        screenInfos = NSScreen.screens.compactMap { ScreenInfo(screen: $0) }
+
+        for screenInfo in screenInfos {
+            let screen = screenInfo.screen
+            let viewModel = LaserViewModel(screenInfo: screenInfo, allScreens: screenInfos)
             let hostingController = NSHostingController(
                 rootView: LaserOverlayView(viewModel: viewModel, screen: screen)
                     .frame(width: screen.frame.width, height: screen.frame.height)

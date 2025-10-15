@@ -21,6 +21,25 @@ brew install --cask laserguide
 
 echo "✅ Installation complete"
 
+echo "🔍 Verifying installed version..."
+EXPECTED_VERSION=$(gh release list --limit 1 --json tagName --jq '.[0].tagName' | sed 's/^v//')
+if [ ! -d "$APP_PATH" ]; then
+    echo "❌ App not found at $APP_PATH"
+    exit 1
+fi
+
+INSTALLED_VERSION=$(defaults read "$APP_PATH/Contents/Info.plist" CFBundleShortVersionString 2>/dev/null || echo "unknown")
+echo "Expected version: $EXPECTED_VERSION"
+echo "Installed version: $INSTALLED_VERSION"
+
+if [ "$INSTALLED_VERSION" != "$EXPECTED_VERSION" ]; then
+    echo "❌ Version mismatch! Installation may have failed."
+    echo "This could indicate Gatekeeper blocked the app from running."
+    exit 1
+fi
+echo "✅ Version matches"
+
+echo ""
 echo "🔏 Verifying code signature..."
 codesign -dv --verbose=4 "$APP_PATH" 2>&1 | tee /tmp/codesign_output.txt
 
@@ -65,7 +84,14 @@ echo "🔍 Verifying app is running..."
 if ps aux | grep -v grep | grep "$APP_PATH" > /dev/null; then
     pid=$(ps aux | grep -v grep | grep "$APP_PATH" | awk '{print $2}')
     echo "✅ $APP_NAME is running (PID: $pid)"
-    
+
+    # 実行中のバージョンを確認
+    RUNNING_VERSION=$(ps aux | grep "$APP_PATH" | grep -v grep | head -1 | grep -o "LaserGuide-[0-9.]*" | sed 's/LaserGuide-//' || echo "")
+    if [ -n "$RUNNING_VERSION" ] && [ "$RUNNING_VERSION" != "$EXPECTED_VERSION" ]; then
+        echo "⚠️  Warning: Running version ($RUNNING_VERSION) differs from expected ($EXPECTED_VERSION)"
+        echo "Old version may still be running. Try quitting and relaunching."
+    fi
+
     echo ""
     echo "📋 Manual verification checklist:"
     echo "  1. Move mouse - laser should appear"
@@ -76,5 +102,10 @@ if ps aux | grep -v grep | grep "$APP_PATH" > /dev/null; then
     exit 0
 else
     echo "❌ $APP_NAME is not running"
+    echo ""
+    echo "⚠️  If Gatekeeper dialog appeared, you need to:"
+    echo "  1. Right-click on /Applications/LaserGuide.app"
+    echo "  2. Select 'Open'"
+    echo "  3. Click 'Open' button in the dialog"
     exit 1
 fi

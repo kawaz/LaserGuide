@@ -83,7 +83,9 @@ When starting a new session, check:
 6. Follow "Fix and Deploy" steps
 
 ## Important Notes
-- **Code signing**: Enabled with Apple Development certificate (reduces Gatekeeper warnings)
+- **Code signing**: Using Apple Development certificate (free)
+  - First launch requires: Right-click → Open → Open button
+  - For no warnings: Need Developer ID certificate ($99/year)
 - **Homebrew tap**: Separate repository `kawaz/homebrew-laserguide`
 - **Test scripts**: Use provided scripts to avoid repetitive work
 - **Keep this file short**: Remove outdated information regularly
