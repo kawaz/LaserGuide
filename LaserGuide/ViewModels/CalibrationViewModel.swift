@@ -8,10 +8,30 @@ class CalibrationViewModel: ObservableObject {
     @Published var currentConfigKey: String?
     @Published var hasExistingCalibration: Bool = false
     @Published var scaleInfo: String = "Scale: 1:2 (1px = 2mm)"
+    @Published var canvasSize = CGSize(width: 500, height: 400)  // Physical canvas size, updated by view
 
     private let calibrationManager = CalibrationDataManager.shared
-    private let canvasSize = CGSize(width: 500, height: 400)
+    private var logicalCanvasSize = CGSize(width: 300, height: 300)  // Logical canvas size
     private var currentScale: CGFloat = 0.5  // Current scale factor (1px = 2mm at 0.5)
+
+    init() {
+        // Monitor display configuration changes
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(screensDidChange),
+            name: NSApplication.didChangeScreenParametersNotification,
+            object: nil
+        )
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    @objc private func screensDidChange() {
+        NSLog("🔄 Screen parameters changed, reloading configuration...")
+        loadConfiguration()
+    }
 
     func loadConfiguration() {
         let (logical, physical) = calibrationManager.getCurrentDisplayConfiguration()
@@ -29,6 +49,31 @@ class CalibrationViewModel: ObservableObject {
         }
     }
 
+    func updateLogicalCanvasSize(_ newSize: CGSize) {
+        guard newSize.width > 0 && newSize.height > 0 else { return }
+        let oldSize = logicalCanvasSize
+        logicalCanvasSize = newSize
+
+        // Force recalculation if canvas size changed significantly
+        if abs(oldSize.width - newSize.width) > 10 || abs(oldSize.height - newSize.height) > 10 {
+            // Reload logical displays with new canvas size
+            let (logical, _) = calibrationManager.getCurrentDisplayConfiguration()
+            loadLogicalDisplays(logical)
+        }
+    }
+
+    func updateCanvasSize(_ newSize: CGSize) {
+        guard newSize.width > 0 && newSize.height > 0 else { return }
+        let oldSize = canvasSize
+        canvasSize = newSize
+
+        // Force recalculation if canvas size changed significantly
+        if abs(oldSize.width - newSize.width) > 10 || abs(oldSize.height - newSize.height) > 10 {
+            // Recalculate optimal scale and update all positions
+            refitToCanvas(force: true)
+        }
+    }
+
     private func loadLogicalDisplays(_ displays: [LogicalDisplayInfo]) {
         guard !displays.isEmpty else { return }
 
@@ -43,8 +88,8 @@ class CalibrationViewModel: ObservableObject {
         let totalHeight = maxY - minY
 
         // Calculate scale to fit in canvas
-        let scaleX = (canvasSize.width * 0.9) / totalWidth
-        let scaleY = (canvasSize.height * 0.9) / totalHeight
+        let scaleX = (logicalCanvasSize.width * 0.9) / totalWidth
+        let scaleY = (logicalCanvasSize.height * 0.9) / totalHeight
         let scale = min(scaleX, scaleY)
 
         logicalDisplays = displays.enumerated().map { index, info in
@@ -69,8 +114,8 @@ class CalibrationViewModel: ObservableObject {
             let flippedY = totalScaledHeight - scaledY - scaledHeight
 
             // Add margin to center
-            let marginX = (canvasSize.width - totalWidth * scale) / 2
-            let marginY = (canvasSize.height - totalHeight * scale) / 2
+            let marginX = (logicalCanvasSize.width - totalWidth * scale) / 2
+            let marginY = (logicalCanvasSize.height - totalHeight * scale) / 2
 
             let scaledFrame = CGRect(
                 x: marginX + scaledX,
@@ -392,7 +437,7 @@ class CalibrationViewModel: ObservableObject {
         physicalDisplays[index] = display
 
         // Refit to canvas if any display is outside
-        refitToCanvasIfNeeded()
+        refitToCanvas()
     }
 
     private func updatePhysicalPositionsFromCanvas() {
@@ -402,7 +447,7 @@ class CalibrationViewModel: ObservableObject {
         // For now, just keep the old physical positions unchanged
     }
 
-    private func refitToCanvasIfNeeded() {
+    private func refitToCanvas(force: Bool = false) {
         // Calculate physical bounds (in mm)
         let allPhysicalMinX = physicalDisplays.map { $0.physicalPosition.x }.min() ?? 0
         let allPhysicalMinY = physicalDisplays.map { $0.physicalPosition.y }.min() ?? 0
@@ -417,16 +462,18 @@ class CalibrationViewModel: ObservableObject {
         let scaleY = (canvasSize.height * 0.9) / physicalHeight
         let newScale = min(scaleX, scaleY, 0.5)
 
-        // Check if scale needs update (allow 5% tolerance)
-        let scaleTolerance: CGFloat = 0.05
-        let scaleRatio = abs(newScale - currentScale) / currentScale
+        // Check if scale needs update (allow 5% tolerance, unless forced)
+        if !force {
+            let scaleTolerance: CGFloat = 0.05
+            let scaleRatio = abs(newScale - currentScale) / currentScale
 
-        if scaleRatio <= scaleTolerance {
-            NSLog("✅ No refit needed: currentScale=%.3f newScale=%.3f ratio=%.3f", currentScale, newScale, scaleRatio)
-            return
+            if scaleRatio <= scaleTolerance {
+                NSLog("✅ No refit needed: currentScale=%.3f newScale=%.3f ratio=%.3f", currentScale, newScale, scaleRatio)
+                return
+            }
         }
 
-        NSLog("⚠️ Refit needed: currentScale=%.3f newScale=%.3f ratio=%.3f", currentScale, newScale, scaleRatio)
+        NSLog("⚠️ Refit %@: currentScale=%.3f newScale=%.3f", force ? "(forced)" : "needed", currentScale, newScale)
 
         // Update scale and recalculate all canvas positions from physical positions
         currentScale = newScale

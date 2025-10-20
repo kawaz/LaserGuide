@@ -4,6 +4,7 @@ import SwiftUI
 struct CalibrationView: View {
     @StateObject private var viewModel = CalibrationViewModel()
     @Environment(\.dismiss) private var dismiss
+    @State private var logicalWidth: CGFloat = 350
 
     var body: some View {
         VStack(spacing: 0) {
@@ -11,23 +12,64 @@ struct CalibrationView: View {
             headerView
 
             // Main content: Logical vs Physical comparison
-            HStack(spacing: 20) {
-                // Left: Logical coordinate system
-                logicalDisplayView
+            GeometryReader { geometry in
+                let availableHeight = geometry.size.height - 20
+                let logicalCanvasSize = CGSize(
+                    width: logicalWidth - 40,  // subtract padding
+                    height: availableHeight - 60  // subtract header and footer text
+                )
+                let physicalCanvasSize = CGSize(
+                    width: geometry.size.width - logicalWidth - 20 - 40,  // subtract logical width, spacing, divider, padding
+                    height: availableHeight - 40  // subtract header and footer text
+                )
 
-                Divider()
+                HStack(spacing: 0) {
+                    // Left: Logical coordinate system (resizable)
+                    logicalDisplayView(canvasSize: logicalCanvasSize)
+                        .frame(width: logicalWidth)
 
-                // Right: Physical coordinate system (draggable)
-                physicalDisplayView
+                    // Resizable divider
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 6)
+                        .gesture(
+                            DragGesture()
+                                .onChanged { value in
+                                    let newWidth = logicalWidth + value.translation.width
+                                    logicalWidth = min(max(newWidth, 250), geometry.size.width - 400)
+                                }
+                        )
+                        .onHover { hovering in
+                            if hovering {
+                                NSCursor.resizeLeftRight.push()
+                            } else {
+                                NSCursor.pop()
+                            }
+                        }
+
+                    // Right: Physical coordinate system (takes remaining space)
+                    physicalDisplayView(canvasSize: physicalCanvasSize)
+                        .padding(.leading, 14)
+                }
+                .padding()
+                .onChange(of: logicalCanvasSize) { _, newSize in
+                    viewModel.updateLogicalCanvasSize(newSize)
+                }
+                .onChange(of: physicalCanvasSize) { _, newSize in
+                    viewModel.updateCanvasSize(newSize)
+                }
+                .onAppear {
+                    viewModel.updateLogicalCanvasSize(logicalCanvasSize)
+                    viewModel.updateCanvasSize(physicalCanvasSize)
+                }
             }
-            .padding()
 
             Divider()
 
             // Footer: Controls
             footerView
         }
-        .frame(width: 1200, height: 700)
+        .frame(minWidth: 900, minHeight: 600)
         .onAppear {
             viewModel.loadConfiguration()
         }
@@ -54,7 +96,7 @@ struct CalibrationView: View {
         .background(Color(NSColor.controlBackgroundColor))
     }
 
-    private var logicalDisplayView: some View {
+    private func logicalDisplayView(canvasSize: CGSize) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Logical Coordinates (macOS)")
                 .font(.headline)
@@ -66,18 +108,41 @@ struct CalibrationView: View {
 
                 // Draw logical displays
                 ForEach(viewModel.logicalDisplays) { display in
-                    LogicalDisplayRect(display: display, canvasSize: CGSize(width: 500, height: 400))
+                    LogicalDisplayRect(display: display, canvasSize: canvasSize)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(width: canvasSize.width, height: canvasSize.height)
 
-            Text("This is how macOS sees your displays")
+            HStack {
+                Text("This is how macOS sees your displays")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Spacer()
+
+                Button("Open Display Settings...") {
+                    openDisplaySettings()
+                }
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .buttonStyle(.link)
+            }
+
+            Spacer()  // Push content to top
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    private func openDisplaySettings() {
+        // Try macOS 13+ first
+        if let url = URL(string: "x-apple.systempreferences:com.apple.Displays-Settings.extension") {
+            NSWorkspace.shared.open(url)
+        } else if let url = URL(string: "x-apple.systempreferences:com.apple.preference.displays") {
+            // Fallback for macOS 12 and earlier
+            NSWorkspace.shared.open(url)
         }
     }
 
-    private var physicalDisplayView: some View {
+    private func physicalDisplayView(canvasSize: CGSize) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Physical Layout (Drag to Arrange)")
                 .font(.headline)
@@ -91,7 +156,7 @@ struct CalibrationView: View {
                 ForEach(viewModel.physicalDisplays) { display in
                     PhysicalDisplayRect(
                         display: display,
-                        canvasSize: CGSize(width: 500, height: 400),
+                        canvasSize: canvasSize,
                         viewModel: viewModel,
                         onDrag: { offset in
                             viewModel.updatePosition(for: display.id, offset: offset)
