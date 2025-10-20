@@ -46,7 +46,7 @@ struct ScreenInfo {
     /// - Parameter cursorScreen: The screen where the cursor is located
     /// - Returns: Correction factor to apply to distances
     func correctionFactor(cursorScreen: ScreenInfo) -> CGFloat {
-        return cursorScreen.ppi / self.ppi
+        return self.ppi / cursorScreen.ppi
     }
 }
 

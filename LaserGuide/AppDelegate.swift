@@ -4,6 +4,7 @@ import SwiftUI
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var screenManager = ScreenManager()
+    private var calibrationWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // 多重起動の防止
@@ -39,6 +40,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let menu = NSMenu()
 
+        // キャリブレーション設定項目
+        let calibrateItem = NSMenuItem(
+            title: "Calibrate Physical Layout...",
+            action: #selector(openCalibration),
+            keyEquivalent: ""
+        )
+        calibrateItem.target = self
+        menu.addItem(calibrateItem)
+
+        menu.addItem(NSMenuItem.separator())
+
         // 自動起動の設定項目
         let autoLaunchItem = NSMenuItem(
             title: "Launch at Login",
@@ -58,15 +70,43 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem?.menu = menu
     }
 
+    @objc private func openCalibration() {
+        // Close existing window if any
+        calibrationWindow?.close()
+        calibrationWindow = nil
+
+        // Create new calibration window
+        let contentView = CalibrationView()
+        let hostingController = NSHostingController(rootView: contentView)
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 1200, height: 700),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Physical Display Layout Calibration"
+        window.contentViewController = hostingController
+        window.center()
+        window.level = .floating  // Keep window on top
+        window.makeKeyAndOrderFront(nil)
+        window.isReleasedWhenClosed = false
+
+        // Activate the app to bring window to front
+        NSApp.activate(ignoringOtherApps: true)
+
+        calibrationWindow = window
+    }
+
     @objc private func toggleAutoLaunch(_ sender: NSMenuItem) {
         let newState = AutoLaunchManager.shared.toggle()
         sender.state = newState ? .on : .off
     }
-    
+
     @objc private func screensDidChange() {
         screenManager.setupOverlays()
     }
-    
+
     @objc private func quitApp() {
         // アプリ終了時にマウス追跡を停止
         MouseTrackingManager.shared.stopTracking()

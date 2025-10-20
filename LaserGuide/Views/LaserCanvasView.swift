@@ -37,9 +37,6 @@ struct LaserCanvasView: View {
             let targetPoint = convertToLocalCoordinates(viewModel.currentMouseLocation)
             let targetSIMD = SIMD2<Float>(Float(targetPoint.x), Float(targetPoint.y))
 
-            // PPI補正係数を取得
-            let correctionFactor = Float(viewModel.correctionFactor(for: viewModel.currentMouseLocation))
-
             // グラデーション事前作成
             let gradient = Gradient(stops: Config.Visual.gradientStops)
 
@@ -48,7 +45,6 @@ struct LaserCanvasView: View {
                 context: context,
                 target: targetPoint,
                 targetSIMD: targetSIMD,
-                correctionFactor: correctionFactor,
                 gradient: gradient
             )
 
@@ -58,7 +54,6 @@ struct LaserCanvasView: View {
                     context: context,
                     target: targetPoint,
                     targetSIMD: targetSIMD,
-                    correctionFactor: correctionFactor,
                     size: size
                 )
             }
@@ -84,7 +79,6 @@ struct LaserCanvasView: View {
         context: GraphicsContext,
         target: CGPoint,
         targetSIMD: SIMD2<Float>,
-        correctionFactor: Float,
         gradient: Gradient
     ) {
         for corner in corners {
@@ -94,32 +88,21 @@ struct LaserCanvasView: View {
             // 最小距離チェック
             guard distance > Float(Constants.minimumDistance) else { continue }
 
-            // PPI補正を適用：cornerから見たtargetの位置を補正
-            // correctionFactor > 1.0: 遠くに移動（LGディスプレイ）
-            // correctionFactor < 1.0: 近くに移動（内蔵ディスプレイ）
-            let correctedTarget = corner + delta * correctionFactor
-            let correctedDelta = correctedTarget - corner
-            let correctedDistance = length(correctedDelta)
-
             // パス作成（SIMD最適化）
             let path = createOptimizedLaserPath(
                 from: corner,
-                to: correctedTarget,
-                delta: correctedDelta,
-                distance: correctedDistance
+                to: targetSIMD,
+                delta: delta,
+                distance: distance
             )
 
-            // グラデーション描画（補正されたtargetを使用）
-            let correctedTargetPoint = CGPoint(
-                x: CGFloat(correctedTarget.x),
-                y: CGFloat(correctedTarget.y)
-            )
+            // グラデーション描画
             context.fill(
                 path,
                 with: .linearGradient(
                     gradient,
                     startPoint: CGPoint(x: CGFloat(corner.x), y: CGFloat(corner.y)),
-                    endPoint: correctedTargetPoint
+                    endPoint: target
                 )
             )
         }
@@ -160,13 +143,11 @@ struct LaserCanvasView: View {
         context: GraphicsContext,
         target: CGPoint,
         targetSIMD: SIMD2<Float>,
-        correctionFactor: Float,
         size: CGSize
     ) {
         let indicators = calculateIndicators(
             target: target,
             targetSIMD: targetSIMD,
-            correctionFactor: correctionFactor,
             size: size
         )
 
@@ -200,24 +181,19 @@ struct LaserCanvasView: View {
     private func calculateIndicators(
         target: CGPoint,
         targetSIMD: SIMD2<Float>,
-        correctionFactor: Float,
         size: CGSize
     ) -> [DistanceIndicator] {
         var indicators: [DistanceIndicator] = []
 
         for corner in corners {
-            // PPI補正を適用したターゲット位置
-            let delta = targetSIMD - corner
-            let correctedTarget = corner + delta * correctionFactor
-
             if let intersection = calculateScreenEdgeIntersection(
                 from: corner,
-                to: correctedTarget,
+                to: targetSIMD,
                 screenSize: size
             ) {
-                // 距離計算（補正されたtargetを使用）
+                // 距離計算
                 let visibleDistance = length(intersection - corner)  // 画面内の距離
-                let totalDistance = length(correctedTarget - corner)  // 全体の距離
+                let totalDistance = length(targetSIMD - corner)  // 全体の距離
 
                 // 画面内の距離 ÷ 全体の距離
                 let percentage = Double(visibleDistance / totalDistance) * 100
