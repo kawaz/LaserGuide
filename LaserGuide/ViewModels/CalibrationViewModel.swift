@@ -367,128 +367,104 @@ class CalibrationViewModel: ObservableObject {
         // Update scaled position
         display.scaledPosition = CGPoint(x: newScaledX, y: newScaledY)
 
+        // Update physical position from canvas position
+        // Calculate physical bounds for proper conversion
+        let allPhysicalMinX = physicalDisplays.map { $0.physicalPosition.x }.min() ?? 0
+        let allPhysicalMinY = physicalDisplays.map { $0.physicalPosition.y }.min() ?? 0
+        let allPhysicalMaxX = physicalDisplays.map { $0.physicalPosition.x + $0.physicalSize.width }.max() ?? 1000
+        let allPhysicalMaxY = physicalDisplays.map { $0.physicalPosition.y + $0.physicalSize.height }.max() ?? 1000
+        let physicalWidth = allPhysicalMaxX - allPhysicalMinX
+        let physicalHeight = allPhysicalMaxY - allPhysicalMinY
+
+        let totalScaledHeight = physicalHeight * currentScale
+        let marginX = (canvasSize.width - physicalWidth * currentScale) / 2
+        let marginY = (canvasSize.height - totalScaledHeight) / 2
+
+        let relativeX = newScaledX - marginX
+        let relativeY = newScaledY - marginY
+        let unflippedY = totalScaledHeight - relativeY - display.scaledSize.height
+
+        display.physicalPosition = CGPoint(
+            x: allPhysicalMinX + relativeX / currentScale,
+            y: allPhysicalMinY + unflippedY / currentScale
+        )
+
         physicalDisplays[index] = display
 
         // Refit to canvas if any display is outside
         refitToCanvasIfNeeded()
-
-        // Update physical positions for all displays after refit
-        updatePhysicalPositionsFromCanvas()
     }
 
     private func updatePhysicalPositionsFromCanvas() {
-        // Calculate current canvas bounds
-        let allCanvasX = physicalDisplays.map { $0.scaledPosition.x }
-        let allCanvasY = physicalDisplays.map { $0.scaledPosition.y }
-        let minCanvasX = allCanvasX.min() ?? 0
-        let minCanvasY = allCanvasY.min() ?? 0
-
-        let maxCanvasX = (physicalDisplays.map { $0.scaledPosition.x + $0.scaledSize.width }).max() ?? canvasSize.width
-        let maxCanvasY = (physicalDisplays.map { $0.scaledPosition.y + $0.scaledSize.height }).max() ?? canvasSize.height
-
-        let totalCanvasWidth = maxCanvasX - minCanvasX
-        let totalCanvasHeight = maxCanvasY - minCanvasY
-
-        let marginX = (canvasSize.width - totalCanvasWidth) / 2
-        let marginY = (canvasSize.height - totalCanvasHeight) / 2
-
-        var updatedDisplays = physicalDisplays
-
-        for i in 0..<updatedDisplays.count {
-            let canvasX = updatedDisplays[i].scaledPosition.x
-            let canvasY = updatedDisplays[i].scaledPosition.y
-
-            // Remove margin
-            let relativeX = canvasX - marginX
-            let relativeY = canvasY - marginY
-
-            // Unflip Y axis
-            let unflippedY = totalCanvasHeight - relativeY - updatedDisplays[i].scaledSize.height
-
-            // Unscale
-            let physicalX = relativeX / currentScale
-            let physicalY = unflippedY / currentScale
-
-            updatedDisplays[i].physicalPosition = CGPoint(x: physicalX, y: physicalY)
-        }
-
-        physicalDisplays = updatedDisplays
+        // This function is called after drag to update physical positions
+        // We don't need to do anything here because physical positions
+        // will be recalculated properly when saving
+        // For now, just keep the old physical positions unchanged
     }
 
     private func refitToCanvasIfNeeded() {
-        // Check if any display is outside canvas
-        let allMinX = physicalDisplays.map { $0.scaledPosition.x }.min() ?? 0
-        let allMinY = physicalDisplays.map { $0.scaledPosition.y }.min() ?? 0
-        let allMaxX = physicalDisplays.map { $0.scaledPosition.x + $0.scaledSize.width }.max() ?? canvasSize.width
-        let allMaxY = physicalDisplays.map { $0.scaledPosition.y + $0.scaledSize.height }.max() ?? canvasSize.height
+        // Calculate physical bounds (in mm)
+        let allPhysicalMinX = physicalDisplays.map { $0.physicalPosition.x }.min() ?? 0
+        let allPhysicalMinY = physicalDisplays.map { $0.physicalPosition.y }.min() ?? 0
+        let allPhysicalMaxX = physicalDisplays.map { $0.physicalPosition.x + $0.physicalSize.width }.max() ?? 1000
+        let allPhysicalMaxY = physicalDisplays.map { $0.physicalPosition.y + $0.physicalSize.height }.max() ?? 1000
 
-        // If everything fits within canvas with margin, no need to refit
-        let margin: CGFloat = 20
-        if allMinX >= margin && allMinY >= margin &&
-           allMaxX <= canvasSize.width - margin && allMaxY <= canvasSize.height - margin {
+        let physicalWidth = allPhysicalMaxX - allPhysicalMinX
+        let physicalHeight = allPhysicalMaxY - allPhysicalMinY
+
+        // Calculate optimal scale to fit in canvas
+        let scaleX = (canvasSize.width * 0.9) / physicalWidth
+        let scaleY = (canvasSize.height * 0.9) / physicalHeight
+        let newScale = min(scaleX, scaleY, 0.5)
+
+        // Check if scale needs update (allow 5% tolerance)
+        let scaleTolerance: CGFloat = 0.05
+        let scaleRatio = abs(newScale - currentScale) / currentScale
+
+        if scaleRatio <= scaleTolerance {
+            NSLog("✅ No refit needed: currentScale=%.3f newScale=%.3f ratio=%.3f", currentScale, newScale, scaleRatio)
             return
         }
 
-        // Need to refit: rescale and recenter all displays
-        let currentWidth = allMaxX - allMinX
-        let currentHeight = allMaxY - allMinY
+        NSLog("⚠️ Refit needed: currentScale=%.3f newScale=%.3f ratio=%.3f", currentScale, newScale, scaleRatio)
 
-        // Calculate new scale to fit everything
-        let scaleX = (canvasSize.width * 0.9) / currentWidth
-        let scaleY = (canvasSize.height * 0.9) / currentHeight
-        let newScale = min(scaleX, scaleY)
-
-        var updatedDisplays = physicalDisplays
-
-        // If new scale is larger than current (zooming in), keep current scale
-        if newScale >= currentScale {
-            // Just recenter without rescaling
-            let marginX = (canvasSize.width - currentWidth) / 2
-            let marginY = (canvasSize.height - currentHeight) / 2
-            let offsetX = marginX - allMinX
-            let offsetY = marginY - allMinY
-
-            for i in 0..<updatedDisplays.count {
-                updatedDisplays[i].scaledPosition.x += offsetX
-                updatedDisplays[i].scaledPosition.y += offsetY
-            }
-
-            // Trigger UI update by reassigning the array
-            physicalDisplays = updatedDisplays
-            return
-        }
-
-        // Rescale and recenter
-        let scaleRatio = newScale / currentScale
+        // Update scale and recalculate all canvas positions from physical positions
         currentScale = newScale
         updateScaleInfo()
 
+        var updatedDisplays = physicalDisplays
+
         for i in 0..<updatedDisplays.count {
-            // Rescale position relative to current bounds
-            let relativeX = updatedDisplays[i].scaledPosition.x - allMinX
-            let relativeY = updatedDisplays[i].scaledPosition.y - allMinY
+            let physicalPos = updatedDisplays[i].physicalPosition
+            let physicalSize = updatedDisplays[i].physicalSize
 
-            let newRelativeX = relativeX * scaleRatio
-            let newRelativeY = relativeY * scaleRatio
+            // Convert physical mm to canvas coordinates
+            let relativeX = physicalPos.x - allPhysicalMinX
+            let relativeY = physicalPos.y - allPhysicalMinY
 
-            // Rescale size
-            updatedDisplays[i].scaledSize.width *= scaleRatio
-            updatedDisplays[i].scaledSize.height *= scaleRatio
+            let scaledX = relativeX * newScale
+            let scaledY = relativeY * newScale
+            let scaledWidth = physicalSize.width * newScale
+            let scaledHeight = physicalSize.height * newScale
+
+            // Flip Y axis: physical bottom (Y=0) becomes canvas bottom (Y=max)
+            let totalScaledHeight = physicalHeight * newScale
+            let flippedY = totalScaledHeight - scaledY - scaledHeight
 
             // Add margin to center
-            let newWidth = currentWidth * scaleRatio
-            let newHeight = currentHeight * scaleRatio
-            let marginX = (canvasSize.width - newWidth) / 2
-            let marginY = (canvasSize.height - newHeight) / 2
+            let marginX = (canvasSize.width - physicalWidth * newScale) / 2
+            let marginY = (canvasSize.height - physicalHeight * newScale) / 2
 
-            updatedDisplays[i].scaledPosition = CGPoint(
-                x: marginX + newRelativeX,
-                y: marginY + newRelativeY
-            )
+            let canvasX = marginX + scaledX
+            let canvasY = marginY + flippedY
+
+            updatedDisplays[i].scaledPosition = CGPoint(x: canvasX, y: canvasY)
+            updatedDisplays[i].scaledSize = CGSize(width: scaledWidth, height: scaledHeight)
         }
 
         // Trigger UI update by reassigning the array
         physicalDisplays = updatedDisplays
+        NSLog("✅ Rescaling complete")
     }
 
     func resetToDefault() {
