@@ -4,9 +4,11 @@ import simd
 
 struct LaserCanvasView: View {
     @ObservedObject var viewModel: LaserViewModel
+    private let screen: NSScreen
     private let screenBounds: CGRect
     private let screenSize: CGSize
     private let corners: [SIMD2<Float>]
+    private let displayID: CGDirectDisplayID
 
     private enum Constants {
         static let cornerWidth: CGFloat = 8.0
@@ -19,8 +21,13 @@ struct LaserCanvasView: View {
 
     init(viewModel: LaserViewModel, screen: NSScreen) {
         self.viewModel = viewModel
+        self.screen = screen
         self.screenBounds = screen.frame
         self.screenSize = screen.frame.size
+
+        // Get display ID
+        let deviceDescription = screen.deviceDescription
+        self.displayID = deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as! CGDirectDisplayID
 
         // 事前計算されたコーナー座標
         self.corners = [
@@ -33,29 +40,42 @@ struct LaserCanvasView: View {
 
     var body: some View {
         Canvas { context, size in
-            // 座標変換は一度だけ
-            let targetPoint = convertToLocalCoordinates(viewModel.currentMouseLocation)
-            let targetSIMD = SIMD2<Float>(Float(targetPoint.x), Float(targetPoint.y))
-
             // グラデーション事前作成
             let gradient = Gradient(stops: Config.Visual.gradientStops)
 
-            // レーザー描画
-            drawAllLasers(
-                context: context,
-                target: targetPoint,
-                targetSIMD: targetSIMD,
-                gradient: gradient
-            )
+            // Physical calibration を使用するか判定
+            if viewModel.usePhysicalLayout,
+               let config = viewModel.physicalConfiguration,
+               let mousePhysical = globalToPhysical(viewModel.currentMouseLocation, config: config) {
+                // 物理座標系で描画
+                drawAllLasersWithPhysical(
+                    context: context,
+                    mousePhysical: mousePhysical,
+                    config: config,
+                    gradient: gradient,
+                    size: size
+                )
+            } else {
+                // 論理座標系で描画（従来通り）
+                let targetPoint = convertToLocalCoordinates(viewModel.currentMouseLocation)
+                let targetSIMD = SIMD2<Float>(Float(targetPoint.x), Float(targetPoint.y))
 
-            // 画面外の場合のみインジケータ描画
-            if isOffScreen(targetPoint, size: size) {
-                drawDistanceIndicators(
+                drawAllLasers(
                     context: context,
                     target: targetPoint,
                     targetSIMD: targetSIMD,
-                    size: size
+                    gradient: gradient
                 )
+
+                // 画面外の場合のみインジケータ描画
+                if isOffScreen(targetPoint, size: size) {
+                    drawDistanceIndicators(
+                        context: context,
+                        target: targetPoint,
+                        targetSIMD: targetSIMD,
+                        size: size
+                    )
+                }
             }
         }
         .drawingGroup(opaque: false, colorMode: .nonLinear) // Metal最適化
@@ -63,9 +83,54 @@ struct LaserCanvasView: View {
 
     @inline(__always)
     private func convertToLocalCoordinates(_ globalLocation: NSPoint) -> CGPoint {
+        // Fallback to logical coordinates (used when no physical calibration)
         let localX = globalLocation.x - screenBounds.minX
         let localY = globalLocation.y - screenBounds.minY
         let convertedY = screenSize.height - localY
+        return CGPoint(x: localX, y: convertedY)
+    }
+
+    /// Convert global mouse location to physical coordinates (mm)
+    private func globalToPhysical(_ globalLocation: NSPoint, config: DisplayConfiguration) -> CGPoint? {
+        // Find which display the mouse is on
+        let allScreens = NSScreen.screens
+        guard let mouseScreen = allScreens.first(where: { $0.frame.contains(globalLocation) }) else {
+            return nil
+        }
+
+        let mouseScreenDesc = mouseScreen.deviceDescription
+        let mouseDisplayID = mouseScreenDesc[NSDeviceDescriptionKey("NSScreenNumber")] as! CGDirectDisplayID
+        let mouseIdentifier = DisplayIdentifier(displayID: mouseDisplayID)
+
+        guard let mouseLayout = config.displays.first(where: { $0.identifier == mouseIdentifier }) else {
+            return nil
+        }
+
+        // Mouse position relative to its screen (logical coordinates)
+        let mouseLocalX = globalLocation.x - mouseScreen.frame.minX
+        let mouseLocalY = globalLocation.y - mouseScreen.frame.minY
+
+        // Convert to physical coordinates (mm)
+        let mouseScreenSize = mouseScreen.frame.size
+        let physicalX = mouseLayout.position.x + (mouseLocalX / mouseScreenSize.width) * mouseLayout.size.width
+        let physicalY = mouseLayout.position.y + (mouseLocalY / mouseScreenSize.height) * mouseLayout.size.height
+
+        return CGPoint(x: physicalX, y: physicalY)
+    }
+
+    /// Convert physical coordinates (mm) to local screen coordinates (pixels)
+    private func physicalToLocal(_ physicalPoint: CGPoint, currentLayout: PhysicalDisplayLayout) -> CGPoint {
+        // Relative physical position
+        let relativeX = physicalPoint.x - currentLayout.position.x
+        let relativeY = physicalPoint.y - currentLayout.position.y
+
+        // Convert from mm to pixels
+        let localX = (relativeX / currentLayout.size.width) * screenSize.width
+        let localY = (relativeY / currentLayout.size.height) * screenSize.height
+
+        // Convert Y coordinate (SwiftUI canvas uses top-left origin)
+        let convertedY = screenSize.height - localY
+
         return CGPoint(x: localX, y: convertedY)
     }
 
@@ -73,6 +138,64 @@ struct LaserCanvasView: View {
     private func isOffScreen(_ point: CGPoint, size: CGSize) -> Bool {
         point.x < 0 || point.x > size.width ||
         point.y < 0 || point.y > size.height
+    }
+
+    private func drawAllLasersWithPhysical(
+        context: GraphicsContext,
+        mousePhysical: CGPoint,
+        config: DisplayConfiguration,
+        gradient: Gradient,
+        size: CGSize
+    ) {
+        // Get current display's physical layout
+        let currentIdentifier = DisplayIdentifier(displayID: displayID)
+        guard let currentLayout = config.displays.first(where: { $0.identifier == currentIdentifier }) else {
+            return
+        }
+
+        // Calculate physical corners of current display (in mm)
+        let physicalCorners = [
+            CGPoint(x: currentLayout.position.x, y: currentLayout.position.y),  // bottom-left
+            CGPoint(x: currentLayout.position.x + currentLayout.size.width, y: currentLayout.position.y),  // bottom-right
+            CGPoint(x: currentLayout.position.x, y: currentLayout.position.y + currentLayout.size.height),  // top-left
+            CGPoint(x: currentLayout.position.x + currentLayout.size.width, y: currentLayout.position.y + currentLayout.size.height)  // top-right
+        ]
+
+        // Draw laser from each physical corner to mouse physical position
+        for physicalCorner in physicalCorners {
+            // Convert to local coordinates
+            let cornerLocal = physicalToLocal(physicalCorner, currentLayout: currentLayout)
+            let targetLocal = physicalToLocal(mousePhysical, currentLayout: currentLayout)
+
+            let cornerSIMD = SIMD2<Float>(Float(cornerLocal.x), Float(cornerLocal.y))
+            let targetSIMD = SIMD2<Float>(Float(targetLocal.x), Float(targetLocal.y))
+
+            let delta = targetSIMD - cornerSIMD
+            let distance = length(delta)
+
+            // 最小距離チェック
+            guard distance > Float(Constants.minimumDistance) else { continue }
+
+            // パス作成
+            let path = createOptimizedLaserPath(
+                from: cornerSIMD,
+                to: targetSIMD,
+                delta: delta,
+                distance: distance
+            )
+
+            // グラデーション描画
+            context.fill(
+                path,
+                with: .linearGradient(
+                    gradient,
+                    startPoint: cornerLocal,
+                    endPoint: targetLocal
+                )
+            )
+        }
+
+        // TODO: Implement distance indicators for physical coordinates if needed
     }
 
     private func drawAllLasers(

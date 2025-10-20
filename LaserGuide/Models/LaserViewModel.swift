@@ -2,17 +2,35 @@
 import SwiftUI
 import Combine
 
+extension Notification.Name {
+    static let calibrationDidSave = Notification.Name("LaserGuide.calibrationDidSave")
+    static let usePhysicalLayoutDidChange = Notification.Name("LaserGuide.usePhysicalLayoutDidChange")
+}
+
 class LaserViewModel: ObservableObject {
     @Published var isVisible: Bool = false
     @Published var currentMouseLocation: CGPoint = .zero
+    @Published var physicalConfiguration: DisplayConfiguration?
+    @Published var usePhysicalLayout: Bool = true
 
     private var subscribers = Set<AnyCancellable>()
     private let mouseTrackingManager = MouseTrackingManager.shared
+    private let calibrationManager = CalibrationDataManager.shared
 
     init() {
+        // Load settings from UserDefaults
+        usePhysicalLayout = UserDefaults.standard.bool(forKey: "UsePhysicalLayout")
+        if UserDefaults.standard.object(forKey: "UsePhysicalLayout") == nil {
+            // Default to true if not set
+            usePhysicalLayout = true
+            UserDefaults.standard.set(true, forKey: "UsePhysicalLayout")
+        }
+
         setupMouseTracking()
+        loadPhysicalConfiguration()
+        setupCalibrationObserver()
     }
-    
+
     private func setupMouseTracking() {
         // MouseTrackingManagerからマウス位置の変更を監視
         mouseTrackingManager.$currentMouseLocation
@@ -21,12 +39,33 @@ class LaserViewModel: ObservableObject {
                 self?.currentMouseLocation = location
             }
             .store(in: &subscribers)
-        
+
         // MouseTrackingManagerからマウスアクティブ状態の変更を監視
         mouseTrackingManager.$isMouseActive
             .receive(on: DispatchQueue.main)
             .sink { [weak self] isActive in
                 self?.isVisible = isActive
+            }
+            .store(in: &subscribers)
+    }
+
+    private func setupCalibrationObserver() {
+        // キャリブレーション保存の通知を監視
+        NotificationCenter.default.publisher(for: .calibrationDidSave)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.reloadPhysicalConfiguration()
+            }
+            .store(in: &subscribers)
+
+        // 物理レイアウト使用設定の変更を監視
+        NotificationCenter.default.publisher(for: .usePhysicalLayoutDidChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] notification in
+                if let enabled = notification.object as? Bool {
+                    self?.usePhysicalLayout = enabled
+                    NSLog("🔧 Physical layout mode: \(enabled ? "ON" : "OFF")")
+                }
             }
             .store(in: &subscribers)
     }
@@ -41,7 +80,21 @@ class LaserViewModel: ObservableObject {
         // MouseTrackingManagerは停止しない
         subscribers.removeAll()
     }
-    
+
+    private func loadPhysicalConfiguration() {
+        physicalConfiguration = calibrationManager.loadCalibration()
+        if physicalConfiguration != nil {
+            NSLog("📐 Physical layout calibration loaded for laser display")
+        } else {
+            NSLog("⚠️ No physical layout calibration found, using logical coordinates only")
+        }
+    }
+
+    /// Reload physical configuration (called when calibration is updated)
+    func reloadPhysicalConfiguration() {
+        loadPhysicalConfiguration()
+    }
+
     deinit {
         stopTracking()
     }

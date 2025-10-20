@@ -563,6 +563,10 @@ class CalibrationViewModel: ObservableObject {
 
         calibrationManager.saveCalibration(configuration)
         hasExistingCalibration = true
+
+        // Notify laser display to reload physical configuration
+        NotificationCenter.default.post(name: .calibrationDidSave, object: nil)
+        NSLog("📐 Notified laser display to reload physical configuration")
     }
 
     private func updateScaleInfo() {

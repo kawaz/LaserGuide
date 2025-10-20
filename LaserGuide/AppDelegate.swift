@@ -63,6 +63,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
+        // 物理レイアウト使用設定項目
+        let usePhysicalLayoutItem = NSMenuItem(
+            title: "Use Physical Layout",
+            action: #selector(toggleUsePhysicalLayout),
+            keyEquivalent: ""
+        )
+        usePhysicalLayoutItem.target = self
+        let isEnabled = UserDefaults.standard.object(forKey: "UsePhysicalLayout") as? Bool ?? true
+        usePhysicalLayoutItem.state = isEnabled ? .on : .off
+        menu.addItem(usePhysicalLayoutItem)
+
+        menu.addItem(NSMenuItem.separator())
+
         let quitItem = NSMenuItem(title: "Quit", action: #selector(quitApp), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
@@ -101,6 +114,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func toggleAutoLaunch(_ sender: NSMenuItem) {
         let newState = AutoLaunchManager.shared.toggle()
         sender.state = newState ? .on : .off
+    }
+
+    @objc private func toggleUsePhysicalLayout(_ sender: NSMenuItem) {
+        let newState = sender.state == .off
+        sender.state = newState ? .on : .off
+
+        UserDefaults.standard.set(newState, forKey: "UsePhysicalLayout")
+        NotificationCenter.default.post(
+            name: .usePhysicalLayoutDidChange,
+            object: newState
+        )
+
+        NSLog("🔧 Use Physical Layout toggled: \(newState ? "ON" : "OFF")")
     }
 
     @objc private func screensDidChange() {
