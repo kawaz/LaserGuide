@@ -92,6 +92,9 @@ class CalibrationViewModel: ObservableObject {
         let scaleY = (logicalCanvasSize.height * 0.9) / totalHeight
         let scale = min(scaleX, scaleY)
 
+        // Assign color indices: Built-in = 0, External = 1, 2, 3...
+        var externalIndex = 1
+
         logicalDisplays = displays.enumerated().map { index, info in
             // Simple approach: just scale and flip Y
             // Input: info.frame in logical coords (Y=0 is bottom)
@@ -124,6 +127,15 @@ class CalibrationViewModel: ObservableObject {
                 height: scaledHeight
             )
 
+            let isBuiltIn = CGDisplayIsBuiltin(info.displayID) != 0
+            let colorIndex: Int
+            if isBuiltIn {
+                colorIndex = 0
+            } else {
+                colorIndex = externalIndex
+                externalIndex += 1
+            }
+
             return LogicalDisplay(
                 id: UUID(),
                 displayID: info.displayID,
@@ -134,7 +146,8 @@ class CalibrationViewModel: ObservableObject {
                 })?.localizedName ?? "Display \(index + 1)",
                 frame: info.frame,
                 scaledFrame: scaledFrame,
-                isBuiltIn: CGDisplayIsBuiltin(info.displayID) != 0
+                isBuiltIn: isBuiltIn,
+                colorIndex: colorIndex
             )
         }
     }
@@ -156,7 +169,7 @@ class CalibrationViewModel: ObservableObject {
 
         // Find the origin display (contains logical point (0, 0))
         guard let originID = logical.first(where: { $0.frame.contains(CGPoint(x: 0, y: 0)) })?.displayID,
-              let originData = displayMap[originID] else {
+              let _ = displayMap[originID] else {
             return
         }
 
@@ -249,6 +262,9 @@ class CalibrationViewModel: ObservableObject {
         currentScale = fitScale
         updateScaleInfo()
 
+        // Create displayID -> colorIndex mapping from logical displays
+        let colorIndexMap = Dictionary(uniqueKeysWithValues: logicalDisplays.map { ($0.displayID, $0.colorIndex) })
+
         // Build physical displays
         physicalDisplays = screenInfos.compactMap { info in
             guard let physicalPos = physicalPositions[info.displayID] else {
@@ -290,7 +306,8 @@ class CalibrationViewModel: ObservableObject {
                 isBuiltIn: info.isBuiltIn,
                 resolution: CGSize(width: info.screen.frame.width * info.screen.backingScaleFactor,
                                  height: info.screen.frame.height * info.screen.backingScaleFactor),
-                ppi: info.ppi
+                ppi: info.ppi,
+                colorIndex: colorIndexMap[info.displayID] ?? 0
             )
 
             NSLog("📍 Initial: %@ - physicalPos:(%.1f,%.1f) scaledPos:(%.1f,%.1f) scaledSize:(%.1fx%.1f)",
@@ -319,6 +336,9 @@ class CalibrationViewModel: ObservableObject {
         let fitScale = min(scaleX, scaleY, 0.5)
         currentScale = fitScale
         updateScaleInfo()
+
+        // Create displayID -> colorIndex mapping from logical displays
+        let colorIndexMap = Dictionary(uniqueKeysWithValues: logicalDisplays.map { ($0.displayID, $0.colorIndex) })
 
         physicalDisplays = config.displays.compactMap { layout in
             guard let info = screenInfos.first(where: {
@@ -359,7 +379,8 @@ class CalibrationViewModel: ObservableObject {
                 isBuiltIn: info.isBuiltIn,
                 resolution: CGSize(width: info.screen.frame.width * info.screen.backingScaleFactor,
                                  height: info.screen.frame.height * info.screen.backingScaleFactor),
-                ppi: info.ppi
+                ppi: info.ppi,
+                colorIndex: colorIndexMap[info.displayID] ?? 0
             )
         }
     }
@@ -588,6 +609,7 @@ struct LogicalDisplay: Identifiable {
     let frame: CGRect  // Original logical coordinates
     let scaledFrame: CGRect  // Scaled for display in UI
     let isBuiltIn: Bool
+    let colorIndex: Int  // For color differentiation
 }
 
 struct PhysicalDisplay: Identifiable {
@@ -602,4 +624,5 @@ struct PhysicalDisplay: Identifiable {
     let isBuiltIn: Bool
     let resolution: CGSize  // Pixel resolution
     let ppi: CGFloat
+    let colorIndex: Int  // For color differentiation
 }

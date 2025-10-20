@@ -11,6 +11,7 @@ class MouseTrackingManager: ObservableObject {
 
     // MARK: - Private Properties
     private var mouseMoveMonitor: Any?
+    private var localMouseMoveMonitor: Any?
     private var debounceWorkItem: DispatchWorkItem?
 
     // MARK: - Singleton
@@ -32,6 +33,10 @@ class MouseTrackingManager: ObservableObject {
             NSEvent.removeMonitor(monitor)
             mouseMoveMonitor = nil
         }
+        if let monitor = localMouseMoveMonitor {
+            NSEvent.removeMonitor(monitor)
+            localMouseMoveMonitor = nil
+        }
         debounceWorkItem?.cancel()
         debounceWorkItem = nil
     }
@@ -39,14 +44,23 @@ class MouseTrackingManager: ObservableObject {
     // MARK: - Private Methods
 
     private func setupGlobalMouseMonitor() {
-        // マウスの移動を監視する
-        // - ドラッグ中は mouseMoved の代わりに *Dragged イベントが発生するのでそちらも監視する
+        // グローバルモニター：他アプリのウィンドウ上でのマウス移動を監視
         mouseMoveMonitor = NSEvent.addGlobalMonitorForEvents(
             matching: [.mouseMoved, .leftMouseDragged, .rightMouseDragged, .otherMouseDragged]
         ) { [weak self] _ in
             DispatchQueue.main.async {
                 self?.updateMouseLocation(NSEvent.mouseLocation)
             }
+        }
+
+        // ローカルモニター：自アプリのウィンドウ上（キャリブレーション画面など）でのマウス移動を監視
+        localMouseMoveMonitor = NSEvent.addLocalMonitorForEvents(
+            matching: [.mouseMoved, .leftMouseDragged, .rightMouseDragged, .otherMouseDragged]
+        ) { [weak self] event in
+            DispatchQueue.main.async {
+                self?.updateMouseLocation(NSEvent.mouseLocation)
+            }
+            return event
         }
     }
 

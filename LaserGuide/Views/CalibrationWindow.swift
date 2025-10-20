@@ -1,6 +1,30 @@
 // CalibrationWindow.swift
 import SwiftUI
 
+// MARK: - Display Color Helper
+
+extension Color {
+    /// Generate display color based on color index
+    /// - colorIndex 0: Blue (built-in display)
+    /// - colorIndex 1+: Distinct colors for external displays
+    static func displayColor(for colorIndex: Int) -> Color {
+        switch colorIndex {
+        case 0: return .blue      // Built-in
+        case 1: return .orange
+        case 2: return .green
+        case 3: return .purple
+        case 4: return .red
+        case 5: return .cyan
+        case 6: return .yellow
+        case 7: return .pink
+        default:
+            // Generate color from hue for 8+ displays
+            let hue = Double((colorIndex - 8) % 12) / 12.0
+            return Color(hue: hue, saturation: 0.7, brightness: 0.9)
+        }
+    }
+}
+
 struct CalibrationView: View {
     @StateObject private var viewModel = CalibrationViewModel()
     @Environment(\.dismiss) private var dismiss
@@ -12,57 +36,34 @@ struct CalibrationView: View {
             headerView
 
             // Main content: Logical vs Physical comparison
-            GeometryReader { geometry in
-                let availableHeight = geometry.size.height - 20
-                let logicalCanvasSize = CGSize(
-                    width: logicalWidth - 40,  // subtract padding
-                    height: availableHeight - 60  // subtract header and footer text
-                )
-                let physicalCanvasSize = CGSize(
-                    width: geometry.size.width - logicalWidth - 20 - 40,  // subtract logical width, spacing, divider, padding
-                    height: availableHeight - 40  // subtract header and footer text
-                )
+            HStack(alignment: .top, spacing: 20) {
+                // Left: Logical coordinate system (resizable)
+                logicalDisplayView()
+                    .frame(width: logicalWidth)
 
-                HStack(spacing: 0) {
-                    // Left: Logical coordinate system (resizable)
-                    logicalDisplayView(canvasSize: logicalCanvasSize)
-                        .frame(width: logicalWidth)
-
-                    // Resizable divider
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(width: 6)
-                        .gesture(
-                            DragGesture()
-                                .onChanged { value in
-                                    let newWidth = logicalWidth + value.translation.width
-                                    logicalWidth = min(max(newWidth, 250), geometry.size.width - 400)
-                                }
-                        )
-                        .onHover { hovering in
-                            if hovering {
-                                NSCursor.resizeLeftRight.push()
-                            } else {
-                                NSCursor.pop()
+                // Resizable divider
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 6)
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                let newWidth = logicalWidth + value.translation.width
+                                logicalWidth = min(max(newWidth, 250), 800)
                             }
+                    )
+                    .onHover { hovering in
+                        if hovering {
+                            NSCursor.resizeLeftRight.push()
+                        } else {
+                            NSCursor.pop()
                         }
+                    }
 
-                    // Right: Physical coordinate system (takes remaining space)
-                    physicalDisplayView(canvasSize: physicalCanvasSize)
-                        .padding(.leading, 14)
-                }
-                .padding()
-                .onChange(of: logicalCanvasSize) { _, newSize in
-                    viewModel.updateLogicalCanvasSize(newSize)
-                }
-                .onChange(of: physicalCanvasSize) { _, newSize in
-                    viewModel.updateCanvasSize(newSize)
-                }
-                .onAppear {
-                    viewModel.updateLogicalCanvasSize(logicalCanvasSize)
-                    viewModel.updateCanvasSize(physicalCanvasSize)
-                }
+                // Right: Physical coordinate system (takes remaining space)
+                physicalDisplayView()
             }
+            .padding()
 
             Divider()
 
@@ -96,22 +97,29 @@ struct CalibrationView: View {
         .background(Color(NSColor.controlBackgroundColor))
     }
 
-    private func logicalDisplayView(canvasSize: CGSize) -> some View {
+    private func logicalDisplayView() -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Logical Coordinates (macOS)")
                 .font(.headline)
 
-            ZStack {
-                Rectangle()
-                    .fill(Color.black.opacity(0.1))
-                    .border(Color.gray, width: 1)
+            GeometryReader { geometry in
+                ZStack {
+                    Rectangle()
+                        .fill(Color.black.opacity(0.1))
+                        .border(Color.gray, width: 1)
 
-                // Draw logical displays
-                ForEach(viewModel.logicalDisplays) { display in
-                    LogicalDisplayRect(display: display, canvasSize: canvasSize)
+                    // Draw logical displays
+                    ForEach(viewModel.logicalDisplays) { display in
+                        LogicalDisplayRect(display: display, canvasSize: geometry.size)
+                    }
+                }
+                .onChange(of: geometry.size) { _, newSize in
+                    viewModel.updateLogicalCanvasSize(newSize)
+                }
+                .onAppear {
+                    viewModel.updateLogicalCanvasSize(geometry.size)
                 }
             }
-            .frame(width: canvasSize.width, height: canvasSize.height)
 
             HStack {
                 Text("This is how macOS sees your displays")
@@ -126,10 +134,8 @@ struct CalibrationView: View {
                 .font(.caption)
                 .buttonStyle(.link)
             }
-
-            Spacer()  // Push content to top
+            .frame(height: 20)
         }
-        .frame(maxHeight: .infinity, alignment: .top)
     }
 
     private func openDisplaySettings() {
@@ -142,44 +148,44 @@ struct CalibrationView: View {
         }
     }
 
-    private func physicalDisplayView(canvasSize: CGSize) -> some View {
+    private func physicalDisplayView() -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Physical Layout (Drag to Arrange)")
                 .font(.headline)
 
-            ZStack {
-                Rectangle()
-                    .fill(Color.black.opacity(0.1))
-                    .border(Color.gray, width: 1)
+            GeometryReader { geometry in
+                ZStack {
+                    Rectangle()
+                        .fill(Color.black.opacity(0.1))
+                        .border(Color.gray, width: 1)
 
-                // Draw physical displays (draggable)
-                ForEach(viewModel.physicalDisplays) { display in
-                    PhysicalDisplayRect(
-                        display: display,
-                        canvasSize: canvasSize,
-                        viewModel: viewModel,
-                        onDrag: { offset in
-                            viewModel.updatePosition(for: display.id, offset: offset)
-                        }
-                    )
+                    // Draw physical displays (draggable)
+                    ForEach(viewModel.physicalDisplays) { display in
+                        PhysicalDisplayRect(
+                            display: display,
+                            canvasSize: geometry.size,
+                            viewModel: viewModel,
+                            onDrag: { offset in
+                                viewModel.updatePosition(for: display.id, offset: offset)
+                            }
+                        )
+                    }
+                }
+                .onChange(of: geometry.size) { _, newSize in
+                    viewModel.updateCanvasSize(newSize)
+                }
+                .onAppear {
+                    viewModel.updateCanvasSize(geometry.size)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            Text(viewModel.scaleInfo)
-                .font(.caption)
-                .foregroundColor(.secondary)
+            Spacer()
+                .frame(height: 20)
         }
     }
 
     private var footerView: some View {
         HStack {
-            if viewModel.hasExistingCalibration {
-                Text("✓ Calibration saved")
-                    .foregroundColor(.green)
-                    .font(.caption)
-            }
-
             Spacer()
 
             Button("Reset to Default") {
@@ -209,17 +215,19 @@ struct LogicalDisplayRect: View {
     let canvasSize: CGSize
 
     var body: some View {
+        let displayColor = Color.displayColor(for: display.colorIndex)
+
         ZStack {
             Rectangle()
-                .fill(display.isBuiltIn ? Color.blue.opacity(0.2) : Color.orange.opacity(0.2))
-                .border(display.isBuiltIn ? Color.blue : Color.orange, width: 2)
+                .fill(displayColor.opacity(0.2))
+                .border(displayColor, width: 2)
 
             // Display info (center)
             VStack(alignment: .center, spacing: 4) {
                 Text(display.name)
                     .font(.caption)
                     .fontWeight(.bold)
-                Text("\(Int(display.frame.width))×\(Int(display.frame.height)) px")
+                Text(verbatim: "\(Int(display.frame.width))×\(Int(display.frame.height)) px")
                     .font(.system(.caption2, design: .monospaced))
             }
             .padding(8)
@@ -231,14 +239,14 @@ struct LogicalDisplayRect: View {
             coordinateLabel(
                 text: "(\(Int(display.frame.minX)), \(Int(display.frame.minY)))",
                 alignment: .bottomLeading,
-                offset: CGPoint(x: 6, y: -6)
+                offset: CGPoint(x: 2, y: -2)
             )
 
             // Top-right coordinate
             coordinateLabel(
                 text: "(\(Int(display.frame.maxX)), \(Int(display.frame.maxY)))",
                 alignment: .topTrailing,
-                offset: CGPoint(x: -6, y: 6)
+                offset: CGPoint(x: -2, y: 2)
             )
         }
         .frame(width: display.scaledFrame.width, height: display.scaledFrame.height)
@@ -282,17 +290,19 @@ struct PhysicalDisplayRect: View {
     }
 
     var body: some View {
+        let displayColor = Color.displayColor(for: display.colorIndex)
+
         ZStack {
             Rectangle()
-                .fill(display.isBuiltIn ? Color.blue.opacity(0.2) : Color.orange.opacity(0.2))
-                .border(display.isBuiltIn ? Color.blue : Color.orange, width: 2)
+                .fill(displayColor.opacity(0.2))
+                .border(displayColor, width: 2)
 
             // Display info (center)
             VStack(alignment: .center, spacing: 2) {
                 Text(display.name)
                     .font(.caption)
                     .fontWeight(.bold)
-                Text("\(Int(display.physicalSize.width))×\(Int(display.physicalSize.height)) mm (PPI:\(Int(display.ppi)))")
+                Text(verbatim: "\(Int(display.physicalSize.width))×\(Int(display.physicalSize.height)) mm")
                     .font(.system(.caption2, design: .monospaced))
             }
             .padding(6)
@@ -304,14 +314,14 @@ struct PhysicalDisplayRect: View {
             coordinateLabel(
                 text: "(\(Int(currentPhysicalPosition.x)), \(Int(currentPhysicalPosition.y)))",
                 alignment: .bottomLeading,
-                offset: CGPoint(x: 6, y: -6)
+                offset: CGPoint(x: 2, y: -2)
             )
 
             // Top-right coordinate (updates during drag)
             coordinateLabel(
                 text: "(\(Int(currentPhysicalPosition.x + display.physicalSize.width)), \(Int(currentPhysicalPosition.y + display.physicalSize.height)))",
                 alignment: .topTrailing,
-                offset: CGPoint(x: -6, y: 6)
+                offset: CGPoint(x: -2, y: 2)
             )
         }
         .frame(width: display.scaledSize.width, height: display.scaledSize.height)
