@@ -118,11 +118,6 @@ class LaserViewModel: ObservableObject {
 
     private func loadPhysicalConfiguration() {
         physicalConfiguration = calibrationManager.loadCalibration()
-        if physicalConfiguration != nil {
-            NSLog("📐 Physical layout calibration loaded for laser display")
-        } else {
-            NSLog("⚠️ No physical layout calibration found, using logical coordinates only")
-        }
     }
 
     /// Reload physical configuration (called when calibration is updated)

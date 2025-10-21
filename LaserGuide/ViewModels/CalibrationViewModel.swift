@@ -316,10 +316,6 @@ class CalibrationViewModel: ObservableObject {
                 colorIndex: colorIndexMap[info.displayID] ?? 0
             )
 
-            NSLog("📍 Initial: %@ - physicalPos:(%.1f,%.1f) scaledPos:(%.1f,%.1f) scaledSize:(%.1fx%.1f)",
-                  info.name, physicalPos.x, physicalPos.y,
-                  scaledFrame.minX, scaledFrame.minY,
-                  scaledWidth, scaledHeight)
 
             return result
         }
@@ -498,12 +494,9 @@ class CalibrationViewModel: ObservableObject {
             let scaleRatio = abs(newScale - currentScale) / currentScale
 
             if scaleRatio <= scaleTolerance {
-                NSLog("✅ No refit needed: currentScale=%.3f newScale=%.3f ratio=%.3f", currentScale, newScale, scaleRatio)
                 return
             }
         }
-
-        NSLog("⚠️ Refit %@: currentScale=%.3f newScale=%.3f", force ? "(forced)" : "needed", currentScale, newScale)
 
         // Update scale and recalculate all canvas positions from physical positions
         currentScale = newScale
@@ -541,7 +534,6 @@ class CalibrationViewModel: ObservableObject {
 
         // Trigger UI update by reassigning the array
         physicalDisplays = updatedDisplays
-        NSLog("✅ Rescaling complete")
     }
 
     func resetToDefault() {
@@ -581,12 +573,10 @@ class CalibrationViewModel: ObservableObject {
 
         // Notify laser display to reload physical configuration
         NotificationCenter.default.post(name: .calibrationDidSave, object: nil)
-        NSLog("📐 Notified laser display to reload physical configuration")
     }
 
     func restoreOriginal() {
         guard let saved = savedConfiguration else {
-            NSLog("⚠️ No saved configuration to restore")
             return
         }
 
@@ -599,7 +589,6 @@ class CalibrationViewModel: ObservableObject {
 
         // Notify laser display to restore original configuration
         NotificationCenter.default.post(name: .calibrationDidChange, object: nil)
-        NSLog("🔄 Restored original configuration")
     }
 
     private func notifyCalibrationChange() {
