@@ -10,6 +10,9 @@ class CalibrationViewModel: ObservableObject {
     @Published var scaleInfo: String = "Scale: 1:2 (1px = 2mm)"
     @Published var canvasSize = CGSize(width: 500, height: 400)  // Physical canvas size, updated by view
     @Published var flashingDisplayNumber: Int? = nil  // Currently flashing display number (only one at a time)
+    @Published var edgeZones: [EdgeZone] = []  // Edge zones for navigation
+    @Published var edgeZonePairs: [EdgeZonePair] = []  // Zone pairings
+    @Published var showEdgeZones: Bool = false  // Toggle edge zone visualization
 
     private let calibrationManager = CalibrationDataManager.shared
     private var logicalCanvasSize = CGSize(width: 300, height: 300)  // Logical canvas size
@@ -50,8 +53,16 @@ class CalibrationViewModel: ObservableObject {
         // Load physical displays (from calibration or default)
         if let savedConfig = savedConfiguration {
             loadPhysicalDisplaysFromCalibration(savedConfig, screenInfos: physical)
+            // Load edge zones and pairs from saved configuration
+            edgeZones = savedConfig.edgeZones
+            edgeZonePairs = savedConfig.edgeZonePairs
         } else {
             loadDefaultPhysicalDisplays(physical)
+            // Load auto-generated edge zones and pairs
+            if let defaultConfig = calibrationManager.loadCalibration() {
+                edgeZones = defaultConfig.edgeZones
+                edgeZonePairs = defaultConfig.edgeZonePairs
+            }
         }
     }
 

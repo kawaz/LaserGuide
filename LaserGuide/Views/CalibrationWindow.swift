@@ -77,22 +77,31 @@ struct CalibrationView: View {
     }
 
     private var headerView: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Physical Display Layout Calibration")
-                .font(.title2)
-                .fontWeight(.bold)
+        HStack {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Physical Display Layout Calibration")
+                    .font(.title2)
+                    .fontWeight(.bold)
 
-            Text("Drag displays on the right to match your actual physical setup")
-                .font(.caption)
-                .foregroundColor(.secondary)
+                Text("Drag displays on the right to match your actual physical setup")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
 
-            if let key = viewModel.currentConfigKey {
-                Text("Configuration: \(key)")
-                    .font(.system(.caption, design: .monospaced))
-                    .foregroundColor(.blue)
+                if let key = viewModel.currentConfigKey {
+                    Text("Configuration: \(key)")
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundColor(.blue)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Spacer()
+
+            // Edge Zone visualization toggle
+            Toggle("Show Edge Zones", isOn: $viewModel.showEdgeZones)
+                .toggleStyle(.switch)
+                .help("Show edge navigation zones and connections")
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background(Color(NSColor.controlBackgroundColor))
     }
@@ -168,6 +177,17 @@ struct CalibrationView: View {
                             onDrag: { offset in
                                 viewModel.updatePosition(for: display.id, offset: offset)
                             }
+                        )
+                    }
+
+                    // Draw edge zone overlay (if enabled)
+                    if viewModel.showEdgeZones {
+                        EdgeZoneOverlay(
+                            edgeZones: viewModel.edgeZones,
+                            edgeZonePairs: viewModel.edgeZonePairs,
+                            physicalDisplays: viewModel.physicalDisplays,
+                            canvasSize: geometry.size,
+                            viewModel: viewModel
                         )
                     }
                 }
@@ -389,6 +409,128 @@ struct PhysicalDisplayRect: View {
             .cornerRadius(2)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
             .offset(x: offset.x, y: offset.y)
+    }
+}
+
+// MARK: - Edge Zone Overlay
+
+struct EdgeZoneOverlay: View {
+    let edgeZones: [EdgeZone]
+    let edgeZonePairs: [EdgeZonePair]
+    let physicalDisplays: [PhysicalDisplay]
+    let canvasSize: CGSize
+    @ObservedObject var viewModel: CalibrationViewModel
+
+    var body: some View {
+        ZStack {
+            // Draw edge zones
+            ForEach(edgeZones) { zone in
+                EdgeZoneView(zone: zone, display: displayFor(zone: zone), viewModel: viewModel)
+            }
+
+            // Draw connection lines between paired zones
+            ForEach(edgeZonePairs) { pair in
+                if let sourceZone = edgeZones.first(where: { $0.id == pair.sourceZoneId }),
+                   let targetZone = edgeZones.first(where: { $0.id == pair.targetZoneId }) {
+                    EdgeZonePairLine(
+                        sourceZone: sourceZone,
+                        targetZone: targetZone,
+                        sourceDisplay: displayFor(zone: sourceZone),
+                        targetDisplay: displayFor(zone: targetZone)
+                    )
+                }
+            }
+        }
+    }
+
+    private func displayFor(zone: EdgeZone) -> PhysicalDisplay? {
+        return physicalDisplays.first { $0.identifier.stringRepresentation == zone.displayId }
+    }
+}
+
+struct EdgeZoneView: View {
+    let zone: EdgeZone
+    let display: PhysicalDisplay?
+    @ObservedObject var viewModel: CalibrationViewModel
+
+    var body: some View {
+        guard let display = display else { return AnyView(EmptyView()) }
+
+        let zoneRect = calculateZoneRect(zone: zone, display: display)
+
+        return AnyView(
+            Rectangle()
+                .fill(Color.green.opacity(0.2))
+                .border(Color.green, width: 2)
+                .frame(width: zoneRect.width, height: zoneRect.height)
+                .position(x: zoneRect.midX, y: zoneRect.midY)
+        )
+    }
+
+    private func calculateZoneRect(zone: EdgeZone, display: PhysicalDisplay) -> CGRect {
+        let scaledPos = display.scaledPosition
+        let scaledSize = display.scaledSize
+
+        switch zone.edge {
+        case .top:
+            let startX = scaledPos.x + scaledSize.width * zone.rangeStart
+            let endX = scaledPos.x + scaledSize.width * zone.rangeEnd
+            return CGRect(x: startX, y: scaledPos.y, width: endX - startX, height: 4)
+        case .bottom:
+            let startX = scaledPos.x + scaledSize.width * zone.rangeStart
+            let endX = scaledPos.x + scaledSize.width * zone.rangeEnd
+            return CGRect(x: startX, y: scaledPos.y + scaledSize.height - 4, width: endX - startX, height: 4)
+        case .left:
+            let startY = scaledPos.y + scaledSize.height * zone.rangeStart
+            let endY = scaledPos.y + scaledSize.height * zone.rangeEnd
+            return CGRect(x: scaledPos.x, y: startY, width: 4, height: endY - startY)
+        case .right:
+            let startY = scaledPos.y + scaledSize.height * zone.rangeStart
+            let endY = scaledPos.y + scaledSize.height * zone.rangeEnd
+            return CGRect(x: scaledPos.x + scaledSize.width - 4, y: startY, width: 4, height: endY - startY)
+        }
+    }
+}
+
+struct EdgeZonePairLine: View {
+    let sourceZone: EdgeZone
+    let targetZone: EdgeZone
+    let sourceDisplay: PhysicalDisplay?
+    let targetDisplay: PhysicalDisplay?
+
+    var body: some View {
+        guard let sourceDisplay = sourceDisplay,
+              let targetDisplay = targetDisplay else {
+            return AnyView(EmptyView())
+        }
+
+        let sourceMid = zoneMidpoint(zone: sourceZone, display: sourceDisplay)
+        let targetMid = zoneMidpoint(zone: targetZone, display: targetDisplay)
+
+        return AnyView(
+            Path { path in
+                path.move(to: sourceMid)
+                path.addLine(to: targetMid)
+            }
+            .stroke(Color.blue.opacity(0.5), lineWidth: 2)
+        )
+    }
+
+    private func zoneMidpoint(zone: EdgeZone, display: PhysicalDisplay) -> CGPoint {
+        let scaledPos = display.scaledPosition
+        let scaledSize = display.scaledSize
+        let mid = (zone.rangeStart + zone.rangeEnd) / 2
+
+        switch zone.edge {
+        case .top:
+            return CGPoint(x: scaledPos.x + scaledSize.width * mid, y: scaledPos.y)
+        case .bottom:
+            return CGPoint(x: scaledPos.x + scaledSize.width * mid, y: scaledPos.y + scaledSize.height)
+        case .left:
+            return CGPoint(x: scaledPos.x, y: scaledPos.y + scaledSize.height * mid)
+        case .right:
+            return CGPoint(x: scaledPos.x + scaledSize.width, y: scaledPos.y + scaledSize.height * mid)
+        }
     }
 }
 
