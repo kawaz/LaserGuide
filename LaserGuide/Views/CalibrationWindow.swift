@@ -255,6 +255,16 @@ struct LogicalDisplayRect: View {
             x: display.scaledFrame.minX + display.scaledFrame.width / 2,
             y: display.scaledFrame.minY + display.scaledFrame.height / 2
         )
+        .onTapGesture {
+            // Flash identification on actual monitor
+            if let screen = NSScreen.screens.first(where: {
+                let desc = $0.deviceDescription
+                return desc[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID == display.displayID
+            }) {
+                let displayNumber = NSScreen.screens.firstIndex(of: screen).map { $0 + 1 } ?? 0
+                MonitorIdentificationOverlay.shared.flash(on: screen, number: displayNumber)
+            }
+        }
     }
 
     @ViewBuilder
@@ -337,7 +347,17 @@ struct PhysicalDisplayRect: View {
                     state = value.translation
                 }
                 .onChanged { _ in
-                    isDragging = true
+                    if !isDragging {
+                        // Flash identification on first drag event
+                        if let screen = NSScreen.screens.first(where: {
+                            let desc = $0.deviceDescription
+                            return desc[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID == display.displayID
+                        }) {
+                            let displayNumber = NSScreen.screens.firstIndex(of: screen).map { $0 + 1 } ?? 0
+                            MonitorIdentificationOverlay.shared.flash(on: screen, number: displayNumber)
+                        }
+                        isDragging = true
+                    }
                 }
                 .onEnded { value in
                     isDragging = false
