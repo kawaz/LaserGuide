@@ -36,10 +36,57 @@ struct PhysicalDisplayLayout: Codable {
     }
 }
 
+/// Edge direction of a display
+enum EdgeDirection: String, Codable, CaseIterable {
+    case top
+    case bottom
+    case left
+    case right
+}
+
+/// A range on a display edge (normalized 0-1 coordinates)
+struct EdgeZone: Codable, Identifiable, Hashable {
+    let id: UUID
+    let displayId: String         // DisplayIdentifier string representation
+    let edge: EdgeDirection
+    let rangeStart: Double        // 0.0 - 1.0 (normalized position)
+    let rangeEnd: Double          // 0.0 - 1.0 (normalized position)
+
+    init(id: UUID = UUID(), displayId: String, edge: EdgeDirection, rangeStart: Double, rangeEnd: Double) {
+        self.id = id
+        self.displayId = displayId
+        self.edge = edge
+        self.rangeStart = rangeStart
+        self.rangeEnd = rangeEnd
+    }
+}
+
+/// Pair of edge zones that allow mouse crossing
+struct EdgeZonePair: Codable, Identifiable, Hashable {
+    let id: UUID
+    let sourceZoneId: UUID
+    let targetZoneId: UUID
+
+    init(id: UUID = UUID(), sourceZoneId: UUID, targetZoneId: UUID) {
+        self.id = id
+        self.sourceZoneId = sourceZoneId
+        self.targetZoneId = targetZoneId
+    }
+}
+
 /// Complete display configuration including all connected displays
 struct DisplayConfiguration: Codable {
     let displays: [PhysicalDisplayLayout]
     let timestamp: Date
+    var edgeZones: [EdgeZone]           // Edge ranges on displays
+    var edgeZonePairs: [EdgeZonePair]   // Pairs allowing mouse crossing
+
+    init(displays: [PhysicalDisplayLayout], timestamp: Date = Date(), edgeZones: [EdgeZone] = [], edgeZonePairs: [EdgeZonePair] = []) {
+        self.displays = displays
+        self.timestamp = timestamp
+        self.edgeZones = edgeZones
+        self.edgeZonePairs = edgeZonePairs
+    }
 
     /// Generate unique configuration key based on connected displays
     /// Key format: "config_vendorID-modelID-serial_vendorID-modelID-serial_..."
