@@ -673,13 +673,20 @@ class CalibrationViewModel: ObservableObject {
         // Set flashing number
         flashingDisplayNumber = displayNumber
 
-        // Update LaserViewModel for all screens
-        updateLaserViewModels()
+        // Notify all observers (including LaserViewModel instances)
+        NotificationCenter.default.post(
+            name: .flashingDisplayNumberDidChange,
+            object: displayNumber
+        )
 
         // Auto-hide after 2 seconds
         let hideTask = DispatchWorkItem { [weak self] in
             self?.flashingDisplayNumber = nil
-            self?.updateLaserViewModels()
+            // Notify with nil to hide all flashes
+            NotificationCenter.default.post(
+                name: .flashingDisplayNumberDidChange,
+                object: nil as Int?
+            )
         }
         flashTimer = hideTask
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: hideTask)
@@ -687,36 +694,30 @@ class CalibrationViewModel: ObservableObject {
 
     /// Start flashing and keep it visible (for drag)
     func startContinuousFlash(displayNumber: Int) {
+        // If already flashing this number, do nothing
+        guard flashingDisplayNumber != displayNumber else { return }
+
         // Cancel previous timer
         flashTimer?.cancel()
 
         // Set flashing number
         flashingDisplayNumber = displayNumber
 
-        // Update LaserViewModel for all screens
-        updateLaserViewModels()
+        // Notify all observers
+        NotificationCenter.default.post(
+            name: .flashingDisplayNumberDidChange,
+            object: displayNumber
+        )
     }
 
     /// Stop continuous flash
     func stopContinuousFlash() {
         flashingDisplayNumber = nil
-        updateLaserViewModels()
-    }
-
-    private func updateLaserViewModels() {
-        let screenManager = ScreenManager.shared
-        for (index, controller) in screenManager.hostingControllers.enumerated() {
-            let viewModel = controller.rootView.viewModel
-            let screenNumber = index + 1
-
-            if flashingDisplayNumber == screenNumber {
-                viewModel.displayNumber = screenNumber
-                viewModel.showIdentification = true
-            } else {
-                viewModel.showIdentification = false
-                viewModel.displayNumber = nil
-            }
-        }
+        // Notify with nil to hide all flashes
+        NotificationCenter.default.post(
+            name: .flashingDisplayNumberDidChange,
+            object: nil as Int?
+        )
     }
 }
 

@@ -15,8 +15,9 @@ class ScreenManager: ObservableObject {
     func setupOverlays() {
         removeOverlays()
 
-        for screen in NSScreen.screens {
-            let viewModel = LaserViewModel()
+        for (index, screen) in NSScreen.screens.enumerated() {
+            let screenNumber = index + 1  // 1-based screen number
+            let viewModel = LaserViewModel(screenNumber: screenNumber)
             let overlayView = LaserOverlayView(viewModel: viewModel, screen: screen)
             let hostingController = NSHostingController(rootView: overlayView)
 

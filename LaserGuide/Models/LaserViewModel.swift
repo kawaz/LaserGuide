@@ -6,6 +6,7 @@ extension Notification.Name {
     static let calibrationDidSave = Notification.Name("LaserGuide.calibrationDidSave")
     static let calibrationDidChange = Notification.Name("LaserGuide.calibrationDidChange")
     static let usePhysicalLayoutDidChange = Notification.Name("LaserGuide.usePhysicalLayoutDidChange")
+    static let flashingDisplayNumberDidChange = Notification.Name("LaserGuide.flashingDisplayNumberDidChange")
 }
 
 class LaserViewModel: ObservableObject {
@@ -20,7 +21,11 @@ class LaserViewModel: ObservableObject {
     private let mouseTrackingManager = MouseTrackingManager.shared
     private let calibrationManager = CalibrationDataManager.shared
 
-    init() {
+    private var screenNumber: Int = 0  // This screen's number (set by ScreenManager)
+
+    init(screenNumber: Int = 0) {
+        self.screenNumber = screenNumber
+
         // Load settings from UserDefaults
         usePhysicalLayout = UserDefaults.standard.bool(forKey: "UsePhysicalLayout")
         if UserDefaults.standard.object(forKey: "UsePhysicalLayout") == nil {
@@ -32,6 +37,7 @@ class LaserViewModel: ObservableObject {
         setupMouseTracking()
         loadPhysicalConfiguration()
         setupCalibrationObserver()
+        setupFlashObserver()
     }
 
     private func setupMouseTracking() {
@@ -76,6 +82,24 @@ class LaserViewModel: ObservableObject {
                 if let enabled = notification.object as? Bool {
                     self?.usePhysicalLayout = enabled
                     NSLog("🔧 Physical layout mode: \(enabled ? "ON" : "OFF")")
+                }
+            }
+            .store(in: &subscribers)
+    }
+
+    private func setupFlashObserver() {
+        // フラッシュ表示番号の変更を監視
+        NotificationCenter.default.publisher(for: .flashingDisplayNumberDidChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] notification in
+                guard let self = self else { return }
+                if let flashingNumber = notification.object as? Int,
+                   flashingNumber == self.screenNumber {
+                    self.displayNumber = self.screenNumber
+                    self.showIdentification = true
+                } else {
+                    self.showIdentification = false
+                    self.displayNumber = nil
                 }
             }
             .store(in: &subscribers)
