@@ -355,11 +355,8 @@ struct PhysicalDisplayRect: View {
             y: display.scaledPosition.y + dragOffset.height + display.scaledSize.height / 2
         )
         .shadow(color: isDragging ? Color.blue.opacity(0.5) : Color.clear, radius: 10)
-        .onTapGesture {
-            viewModel.startFlash(displayNumber: displayNumber)
-        }
         .gesture(
-            DragGesture()
+            DragGesture(minimumDistance: 0)
                 .updating($dragOffset) { value, state, _ in
                     state = value.translation
                 }
@@ -371,8 +368,14 @@ struct PhysicalDisplayRect: View {
                 }
                 .onEnded { value in
                     isDragging = false
-                    onDrag(value.translation)
                     viewModel.stopContinuousFlash()
+
+                    // If barely moved, treat as tap
+                    if abs(value.translation.width) < 3 && abs(value.translation.height) < 3 {
+                        viewModel.startFlash(displayNumber: displayNumber)
+                    } else {
+                        onDrag(value.translation)
+                    }
                 }
         )
     }
