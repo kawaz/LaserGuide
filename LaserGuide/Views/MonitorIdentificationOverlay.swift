@@ -6,8 +6,6 @@ import Cocoa
 class MonitorIdentificationOverlay {
     static let shared = MonitorIdentificationOverlay()
 
-    private var overlayWindows: [NSWindow] = []
-
     private init() {}
 
     /// Flash identification number and border on specified screen
@@ -18,33 +16,28 @@ class MonitorIdentificationOverlay {
     func flash(on screen: NSScreen, number: Int, duration: TimeInterval = 2.0) {
         // Create overlay window for this screen
         let window = createOverlayWindow(for: screen, number: number)
-        overlayWindows.append(window)
 
         // Show window
         window.orderFrontRegardless()
-        window.makeKeyAndOrderFront(nil)
 
         // Animate fade in and fade out
-        DispatchQueue.main.async {
-            NSAnimationContext.runAnimationGroup({ context in
-                context.duration = 0.3
-                window.animator().alphaValue = 1.0
-            }, completionHandler: {
-                // Wait, then fade out
-                DispatchQueue.main.asyncAfter(deadline: .now() + duration - 0.6) {
-                    NSAnimationContext.runAnimationGroup({ context in
-                        context.duration = 0.3
-                        window.animator().alphaValue = 0.0
-                    }, completionHandler: {
-                        // Close and remove window
-                        window.close()
-                        if let index = self.overlayWindows.firstIndex(of: window) {
-                            self.overlayWindows.remove(at: index)
-                        }
-                    })
-                }
-            })
-        }
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.3
+            window.animator().alphaValue = 1.0
+        }, completionHandler: {
+            // Wait, then fade out
+            DispatchQueue.main.asyncAfter(deadline: .now() + duration - 0.6) { [weak window] in
+                guard let window = window else { return }
+
+                NSAnimationContext.runAnimationGroup({ context in
+                    context.duration = 0.3
+                    window.animator().alphaValue = 0.0
+                }, completionHandler: { [weak window] in
+                    // Close window
+                    window?.close()
+                })
+            }
+        })
     }
 
     private func createOverlayWindow(for screen: NSScreen, number: Int) -> NSWindow {
