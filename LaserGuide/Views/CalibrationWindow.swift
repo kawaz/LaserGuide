@@ -360,20 +360,18 @@ struct PhysicalDisplayRect: View {
         }
         .gesture(
             DragGesture()
-                .updating($dragOffset) { value, state, transaction in
+                .updating($dragOffset) { value, state, _ in
                     state = value.translation
-                    // Start continuous flash immediately on drag start
+                }
+                .onChanged { _ in
                     if !isDragging {
-                        DispatchQueue.main.async {
-                            viewModel.startContinuousFlash(displayNumber: displayNumber)
-                        }
                         isDragging = true
+                        viewModel.startContinuousFlash(displayNumber: displayNumber)
                     }
                 }
                 .onEnded { value in
                     isDragging = false
                     onDrag(value.translation)
-                    // Stop continuous flash
                     viewModel.stopContinuousFlash()
                 }
         )
