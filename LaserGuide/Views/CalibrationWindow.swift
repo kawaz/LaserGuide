@@ -110,7 +110,7 @@ struct CalibrationView: View {
 
                     // Draw logical displays
                     ForEach(viewModel.logicalDisplays) { display in
-                        LogicalDisplayRect(display: display, canvasSize: geometry.size)
+                        LogicalDisplayRect(display: display, canvasSize: geometry.size, viewModel: viewModel)
                     }
                 }
                 .onChange(of: geometry.size) { _, newSize in
@@ -214,27 +214,38 @@ struct CalibrationView: View {
 struct LogicalDisplayRect: View {
     let display: LogicalDisplay
     let canvasSize: CGSize
+    @ObservedObject var viewModel: CalibrationViewModel
 
     var body: some View {
         let displayColor = Color.displayColor(for: display.colorIndex)
+        let displayNumber = NSScreen.screens.firstIndex(where: { $0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID == display.displayID }).map { $0 + 1 } ?? 0
+        let isFlashing = viewModel.flashingDisplayNumber == displayNumber
 
         ZStack {
             Rectangle()
                 .fill(displayColor.opacity(0.2))
                 .border(displayColor, width: 2)
 
-            // Display info (center)
-            VStack(alignment: .center, spacing: 4) {
-                Text(display.name)
-                    .font(.caption)
-                    .fontWeight(.bold)
-                Text(verbatim: "\(Int(display.frame.width))×\(Int(display.frame.height)) px")
-                    .font(.system(.caption2, design: .monospaced))
+            if isFlashing {
+                // Flash: Number sized to fit the display rectangle
+                let size = min(display.scaledFrame.width, display.scaledFrame.height) * 0.6
+                Text("\(displayNumber)")
+                    .font(.system(size: size, weight: .bold, design: .rounded))
+                    .foregroundColor(displayColor)
+            } else {
+                // Normal: Display info (center)
+                VStack(alignment: .center, spacing: 4) {
+                    Text(display.name)
+                        .font(.caption)
+                        .fontWeight(.bold)
+                    Text(verbatim: "\(Int(display.frame.width))×\(Int(display.frame.height)) px")
+                        .font(.system(.caption2, design: .monospaced))
+                }
+                .padding(8)
+                .background(Color.black.opacity(0.6))
+                .foregroundColor(.white)
+                .cornerRadius(4)
             }
-            .padding(8)
-            .background(Color.black.opacity(0.6))
-            .foregroundColor(.white)
-            .cornerRadius(4)
 
             // Bottom-left coordinate
             coordinateLabel(
@@ -256,14 +267,7 @@ struct LogicalDisplayRect: View {
             y: display.scaledFrame.minY + display.scaledFrame.height / 2
         )
         .onTapGesture {
-            // Flash identification on actual monitor
-            if let screen = NSScreen.screens.first(where: {
-                let desc = $0.deviceDescription
-                return desc[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID == display.displayID
-            }) {
-                let displayNumber = NSScreen.screens.firstIndex(of: screen).map { $0 + 1 } ?? 0
-                MonitorIdentificationOverlay.shared.flash(on: screen, number: displayNumber)
-            }
+            viewModel.startFlash(displayNumber: displayNumber)
         }
     }
 
@@ -302,24 +306,34 @@ struct PhysicalDisplayRect: View {
 
     var body: some View {
         let displayColor = Color.displayColor(for: display.colorIndex)
+        let displayNumber = NSScreen.screens.firstIndex(where: { $0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID == display.displayID }).map { $0 + 1 } ?? 0
+        let isFlashing = viewModel.flashingDisplayNumber == displayNumber
 
         ZStack {
             Rectangle()
                 .fill(displayColor.opacity(0.2))
                 .border(displayColor, width: 2)
 
-            // Display info (center)
-            VStack(alignment: .center, spacing: 2) {
-                Text(display.name)
-                    .font(.caption)
-                    .fontWeight(.bold)
-                Text(verbatim: "\(Int(display.physicalSize.width))×\(Int(display.physicalSize.height)) mm")
-                    .font(.system(.caption2, design: .monospaced))
+            if isFlashing {
+                // Flash: Number sized to fit the display rectangle
+                let size = min(display.scaledSize.width, display.scaledSize.height) * 0.6
+                Text("\(displayNumber)")
+                    .font(.system(size: size, weight: .bold, design: .rounded))
+                    .foregroundColor(displayColor)
+            } else {
+                // Normal: Display info (center)
+                VStack(alignment: .center, spacing: 2) {
+                    Text(display.name)
+                        .font(.caption)
+                        .fontWeight(.bold)
+                    Text(verbatim: "\(Int(display.physicalSize.width))×\(Int(display.physicalSize.height)) mm")
+                        .font(.system(.caption2, design: .monospaced))
+                }
+                .padding(6)
+                .background(Color.black.opacity(0.7))
+                .foregroundColor(.white)
+                .cornerRadius(4)
             }
-            .padding(6)
-            .background(Color.black.opacity(0.7))
-            .foregroundColor(.white)
-            .cornerRadius(4)
 
             // Bottom-left coordinate (updates during drag)
             coordinateLabel(
@@ -341,6 +355,9 @@ struct PhysicalDisplayRect: View {
             y: display.scaledPosition.y + dragOffset.height + display.scaledSize.height / 2
         )
         .shadow(color: isDragging ? Color.blue.opacity(0.5) : Color.clear, radius: 10)
+        .onTapGesture {
+            viewModel.startFlash(displayNumber: displayNumber)
+        }
         .gesture(
             DragGesture()
                 .updating($dragOffset) { value, state, _ in
@@ -348,20 +365,16 @@ struct PhysicalDisplayRect: View {
                 }
                 .onChanged { _ in
                     if !isDragging {
-                        // Flash identification on first drag event
-                        if let screen = NSScreen.screens.first(where: {
-                            let desc = $0.deviceDescription
-                            return desc[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID == display.displayID
-                        }) {
-                            let displayNumber = NSScreen.screens.firstIndex(of: screen).map { $0 + 1 } ?? 0
-                            MonitorIdentificationOverlay.shared.flash(on: screen, number: displayNumber)
-                        }
+                        // Start continuous flash on drag
+                        viewModel.startContinuousFlash(displayNumber: displayNumber)
                         isDragging = true
                     }
                 }
                 .onEnded { value in
                     isDragging = false
                     onDrag(value.translation)
+                    // Stop continuous flash
+                    viewModel.stopContinuousFlash()
                 }
         )
     }

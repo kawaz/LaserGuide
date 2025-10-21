@@ -9,11 +9,13 @@ class CalibrationViewModel: ObservableObject {
     @Published var hasExistingCalibration: Bool = false
     @Published var scaleInfo: String = "Scale: 1:2 (1px = 2mm)"
     @Published var canvasSize = CGSize(width: 500, height: 400)  // Physical canvas size, updated by view
+    @Published var flashingDisplayNumber: Int? = nil  // Currently flashing display number (only one at a time)
 
     private let calibrationManager = CalibrationDataManager.shared
     private var logicalCanvasSize = CGSize(width: 300, height: 300)  // Logical canvas size
     private var currentScale: CGFloat = 0.5  // Current scale factor (1px = 2mm at 0.5)
     private var savedConfiguration: DisplayConfiguration?  // For restoring on cancel/close
+    private var flashTimer: DispatchWorkItem? = nil  // Timer for hiding flash
 
     init() {
         // Monitor display configuration changes
@@ -659,6 +661,62 @@ class CalibrationViewModel: ObservableObject {
         let physicalY = unflippedY / currentScale
 
         return CGPoint(x: physicalX, y: physicalY)
+    }
+
+    // MARK: - Flash Control
+
+    /// Start flashing a display number (2 seconds auto-hide)
+    func startFlash(displayNumber: Int) {
+        // Cancel previous timer
+        flashTimer?.cancel()
+
+        // Set flashing number
+        flashingDisplayNumber = displayNumber
+
+        // Update LaserViewModel for all screens
+        updateLaserViewModels()
+
+        // Auto-hide after 2 seconds
+        let hideTask = DispatchWorkItem { [weak self] in
+            self?.flashingDisplayNumber = nil
+            self?.updateLaserViewModels()
+        }
+        flashTimer = hideTask
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: hideTask)
+    }
+
+    /// Start flashing and keep it visible (for drag)
+    func startContinuousFlash(displayNumber: Int) {
+        // Cancel previous timer
+        flashTimer?.cancel()
+
+        // Set flashing number
+        flashingDisplayNumber = displayNumber
+
+        // Update LaserViewModel for all screens
+        updateLaserViewModels()
+    }
+
+    /// Stop continuous flash
+    func stopContinuousFlash() {
+        flashingDisplayNumber = nil
+        updateLaserViewModels()
+    }
+
+    private func updateLaserViewModels() {
+        let screenManager = ScreenManager.shared
+        for (index, controller) in screenManager.hostingControllers.enumerated() {
+            let viewModel = controller.rootView.viewModel
+            let screenNumber = index + 1
+
+            if flashingDisplayNumber == screenNumber {
+                viewModel.displayNumber = screenNumber
+                viewModel.showIdentification = true
+            } else {
+                viewModel.showIdentification = false
+                viewModel.displayNumber = nil
+            }
+        }
     }
 }
 

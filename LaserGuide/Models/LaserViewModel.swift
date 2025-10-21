@@ -13,6 +13,8 @@ class LaserViewModel: ObservableObject {
     @Published var currentMouseLocation: CGPoint = .zero
     @Published var physicalConfiguration: DisplayConfiguration?
     @Published var usePhysicalLayout: Bool = true
+    @Published var displayNumber: Int?  // モニター識別番号（表示中のみ）
+    @Published var showIdentification: Bool = false  // 識別番号の表示状態
 
     private var subscribers = Set<AnyCancellable>()
     private let mouseTrackingManager = MouseTrackingManager.shared

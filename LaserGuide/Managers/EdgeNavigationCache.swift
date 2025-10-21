@@ -26,10 +26,10 @@ class EdgeNavigationCache {
         zones.removeAll()
         zoneById.removeAll()
 
-        // Build zone ID to DisplayIdentifier mapping
-        let displayIdMap = Dictionary(uniqueKeysWithValues: configuration.displays.map {
-            ($0.identifier.stringRepresentation, $0)
-        })
+        // Build zone ID to DisplayIdentifier mapping (unused but kept for future use)
+        // let displayIdMap = Dictionary(uniqueKeysWithValues: configuration.displays.map {
+        //     ($0.identifier.stringRepresentation, $0)
+        // })
 
         // Build screen lookup by DisplayIdentifier
         let screenByDisplayId: [String: NSScreen] = Dictionary(uniqueKeysWithValues:
@@ -56,7 +56,7 @@ class EdgeNavigationCache {
                 screenFrame: screen.frame
             )
 
-            var runtime = ZoneRuntime(
+            let runtime = ZoneRuntime(
                 id: zone.id,
                 range: pixelRange,
                 targetZoneId: nil,  // Set in second pass

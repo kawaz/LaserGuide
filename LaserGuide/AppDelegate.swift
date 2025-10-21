@@ -3,7 +3,7 @@ import SwiftUI
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
-    private var screenManager = ScreenManager()
+    private var screenManager = ScreenManager.shared
     private var calibrationWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
