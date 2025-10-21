@@ -193,6 +193,7 @@ struct CalibrationView: View {
             }
 
             Button("Cancel") {
+                viewModel.restoreOriginal()
                 dismiss()
             }
             .keyboardShortcut(.cancelAction)

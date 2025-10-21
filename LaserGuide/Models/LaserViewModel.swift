@@ -4,6 +4,7 @@ import Combine
 
 extension Notification.Name {
     static let calibrationDidSave = Notification.Name("LaserGuide.calibrationDidSave")
+    static let calibrationDidChange = Notification.Name("LaserGuide.calibrationDidChange")
     static let usePhysicalLayoutDidChange = Notification.Name("LaserGuide.usePhysicalLayoutDidChange")
 }
 
@@ -52,6 +53,14 @@ class LaserViewModel: ObservableObject {
     private func setupCalibrationObserver() {
         // キャリブレーション保存の通知を監視
         NotificationCenter.default.publisher(for: .calibrationDidSave)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.reloadPhysicalConfiguration()
+            }
+            .store(in: &subscribers)
+
+        // キャリブレーション変更の通知を監視（リアルタイムプレビュー用）
+        NotificationCenter.default.publisher(for: .calibrationDidChange)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.reloadPhysicalConfiguration()

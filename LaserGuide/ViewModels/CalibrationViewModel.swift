@@ -13,6 +13,7 @@ class CalibrationViewModel: ObservableObject {
     private let calibrationManager = CalibrationDataManager.shared
     private var logicalCanvasSize = CGSize(width: 300, height: 300)  // Logical canvas size
     private var currentScale: CGFloat = 0.5  // Current scale factor (1px = 2mm at 0.5)
+    private var savedConfiguration: DisplayConfiguration?  // For restoring on cancel/close
 
     init() {
         // Monitor display configuration changes
@@ -38,11 +39,14 @@ class CalibrationViewModel: ObservableObject {
         currentConfigKey = calibrationManager.getCurrentConfigurationKey()
         hasExistingCalibration = calibrationManager.hasCalibration()
 
+        // Save current configuration for restoration
+        savedConfiguration = calibrationManager.loadCalibration()
+
         // Load logical displays
         loadLogicalDisplays(logical)
 
         // Load physical displays (from calibration or default)
-        if let savedConfig = calibrationManager.loadCalibration() {
+        if let savedConfig = savedConfiguration {
             loadPhysicalDisplaysFromCalibration(savedConfig, screenInfos: physical)
         } else {
             loadDefaultPhysicalDisplays(physical)
@@ -459,6 +463,9 @@ class CalibrationViewModel: ObservableObject {
 
         // Refit to canvas if any display is outside
         refitToCanvas()
+
+        // Notify laser display for real-time preview
+        notifyCalibrationChange()
     }
 
     private func updatePhysicalPositionsFromCanvas() {
@@ -564,9 +571,61 @@ class CalibrationViewModel: ObservableObject {
         calibrationManager.saveCalibration(configuration)
         hasExistingCalibration = true
 
+        // Update saved configuration to new save point
+        savedConfiguration = configuration
+
+        // Clear temporary configuration
+        calibrationManager.clearTemporaryCalibration()
+
         // Notify laser display to reload physical configuration
         NotificationCenter.default.post(name: .calibrationDidSave, object: nil)
         NSLog("📐 Notified laser display to reload physical configuration")
+    }
+
+    func restoreOriginal() {
+        guard let saved = savedConfiguration else {
+            NSLog("⚠️ No saved configuration to restore")
+            return
+        }
+
+        // Clear temporary configuration
+        calibrationManager.clearTemporaryCalibration()
+
+        // Reload from saved configuration
+        let (_, physical) = calibrationManager.getCurrentDisplayConfiguration()
+        loadPhysicalDisplaysFromCalibration(saved, screenInfos: physical)
+
+        // Notify laser display to restore original configuration
+        NotificationCenter.default.post(name: .calibrationDidChange, object: nil)
+        NSLog("🔄 Restored original configuration")
+    }
+
+    private func notifyCalibrationChange() {
+        // Build temporary configuration from current physical displays
+        let layouts = physicalDisplays.map { display in
+            PhysicalDisplayLayout(
+                identifier: display.identifier,
+                position: PhysicalDisplayLayout.PhysicalPoint(
+                    x: display.physicalPosition.x,
+                    y: display.physicalPosition.y
+                ),
+                size: PhysicalDisplayLayout.PhysicalSize(
+                    width: display.physicalSize.width,
+                    height: display.physicalSize.height
+                )
+            )
+        }
+
+        let tempConfiguration = DisplayConfiguration(
+            displays: layouts,
+            timestamp: Date()
+        )
+
+        // Temporarily save to allow laser display to load it
+        calibrationManager.saveCalibrationTemporary(tempConfiguration)
+
+        // Notify laser display for real-time preview
+        NotificationCenter.default.post(name: .calibrationDidChange, object: nil)
     }
 
     private func updateScaleInfo() {

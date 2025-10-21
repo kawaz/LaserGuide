@@ -46,14 +46,36 @@ class CalibrationDataManager {
         }
     }
 
+    /// Save temporary calibration data for real-time preview (not persisted permanently)
+    func saveCalibrationTemporary(_ configuration: DisplayConfiguration) {
+        let key = calibrationKeyPrefix + getCurrentConfigurationKey() + ".temporary"
+        if let encoded = try? JSONEncoder().encode(configuration) {
+            userDefaults.set(encoded, forKey: key)
+        }
+    }
+
     /// Load calibration data for current display configuration
     func loadCalibration() -> DisplayConfiguration? {
+        // Check for temporary configuration first (for real-time preview)
+        let tempKey = calibrationKeyPrefix + getCurrentConfigurationKey() + ".temporary"
+        if let tempData = userDefaults.data(forKey: tempKey),
+           let tempConfiguration = try? JSONDecoder().decode(DisplayConfiguration.self, from: tempData) {
+            return tempConfiguration
+        }
+
+        // Fall back to saved configuration
         let key = calibrationKeyPrefix + getCurrentConfigurationKey()
         guard let data = userDefaults.data(forKey: key),
               let configuration = try? JSONDecoder().decode(DisplayConfiguration.self, from: data) else {
             return nil
         }
         return configuration
+    }
+
+    /// Clear temporary calibration data
+    func clearTemporaryCalibration() {
+        let tempKey = calibrationKeyPrefix + getCurrentConfigurationKey() + ".temporary"
+        userDefaults.removeObject(forKey: tempKey)
     }
 
     /// Check if calibration exists for current configuration
