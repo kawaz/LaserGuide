@@ -12,7 +12,8 @@ class CalibrationViewModel: ObservableObject {
     @Published var flashingDisplayNumber: Int? = nil  // Currently flashing display number (only one at a time)
     @Published var edgeZones: [EdgeZone] = []  // Edge zones for navigation
     @Published var edgeZonePairs: [EdgeZonePair] = []  // Zone pairings
-    @Published var showEdgeZones: Bool = false  // Toggle edge zone visualization
+    @Published var dragOffsets: [UUID: CGSize] = [:]  // Track drag offsets for each display
+    @Published var selectedEdgeZoneIds: Set<UUID> = []  // Currently selected edge zones (shows handles for all)
 
     private let calibrationManager = CalibrationDataManager.shared
     private var logicalCanvasSize = CGSize(width: 300, height: 300)  // Logical canvas size
@@ -56,13 +57,35 @@ class CalibrationViewModel: ObservableObject {
             // Load edge zones and pairs from saved configuration
             edgeZones = savedConfig.edgeZones
             edgeZonePairs = savedConfig.edgeZonePairs
+
+            // If no edge zones, auto-generate them
+            if edgeZones.isEmpty {
+                NSLog("📍 No edge zones in saved config - generating default zones")
+                let layouts = savedConfig.displays
+                let screens = NSScreen.screens
+                let (zones, pairs) = calibrationManager.generateDefaultEdgeZonePairs(displays: layouts, screens: screens)
+                edgeZones = zones
+                edgeZonePairs = pairs
+                NSLog("📍 Generated \(edgeZones.count) zones and \(edgeZonePairs.count) pairs")
+            } else {
+                NSLog("📍 Loaded \(edgeZones.count) zones and \(edgeZonePairs.count) pairs from saved config")
+            }
         } else {
             loadDefaultPhysicalDisplays(physical)
-            // Load auto-generated edge zones and pairs
-            if let defaultConfig = calibrationManager.loadCalibration() {
-                edgeZones = defaultConfig.edgeZones
-                edgeZonePairs = defaultConfig.edgeZonePairs
+            // Generate default edge zones
+            NSLog("📍 No saved config - generating default zones from physical displays")
+            let layouts = physicalDisplays.map { display in
+                PhysicalDisplayLayout(
+                    identifier: display.identifier,
+                    position: PhysicalDisplayLayout.PhysicalPoint(x: display.physicalPosition.x, y: display.physicalPosition.y),
+                    size: PhysicalDisplayLayout.PhysicalSize(width: display.physicalSize.width, height: display.physicalSize.height)
+                )
             }
+            let screens = NSScreen.screens
+            let (zones, pairs) = calibrationManager.generateDefaultEdgeZonePairs(displays: layouts, screens: screens)
+            edgeZones = zones
+            edgeZonePairs = pairs
+            NSLog("📍 Generated \(edgeZones.count) zones and \(edgeZonePairs.count) pairs")
         }
     }
 
@@ -408,38 +431,87 @@ class CalibrationViewModel: ObservableObject {
         // Check collision with other displays
         let newRect = CGRect(x: newScaledX, y: newScaledY, width: display.scaledSize.width, height: display.scaledSize.height)
 
+        // Collect all overlapping rectangles
+        var overlappingRects: [(rect: CGRect, index: Int)] = []
         for (otherIndex, other) in physicalDisplays.enumerated() {
             if otherIndex == index { continue }
-
             let otherRect = CGRect(x: other.scaledPosition.x, y: other.scaledPosition.y,
                                   width: other.scaledSize.width, height: other.scaledSize.height)
-
             if newRect.intersects(otherRect) {
-                // Calculate overlap on each side
+                overlappingRects.append((otherRect, otherIndex))
+            }
+        }
+
+        if overlappingRects.count == 1 {
+            // Single overlap: find minimum overlap direction among all 4 directions
+            let otherRect = overlappingRects[0].rect
+
+            let overlapLeft = otherRect.maxX - newRect.minX
+            let overlapRight = newRect.maxX - otherRect.minX
+            let overlapTop = otherRect.maxY - newRect.minY
+            let overlapBottom = newRect.maxY - otherRect.minY
+
+            let minOverlap = min(overlapLeft, overlapRight, overlapTop, overlapBottom)
+
+            if minOverlap == overlapLeft {
+                newScaledX = otherRect.maxX
+            } else if minOverlap == overlapRight {
+                newScaledX = otherRect.minX - display.scaledSize.width
+            } else if minOverlap == overlapTop {
+                newScaledY = otherRect.maxY
+            } else {
+                newScaledY = otherRect.minY - display.scaledSize.height
+            }
+        } else if overlappingRects.count > 1 {
+            // Multiple overlaps: adjust X and Y independently
+            var minXAdjustment: (amount: CGFloat, newX: CGFloat)? = nil
+            var minYAdjustment: (amount: CGFloat, newY: CGFloat)? = nil
+
+            for (otherRect, _) in overlappingRects {
                 let overlapLeft = otherRect.maxX - newRect.minX
                 let overlapRight = newRect.maxX - otherRect.minX
                 let overlapTop = otherRect.maxY - newRect.minY
                 let overlapBottom = newRect.maxY - otherRect.minY
 
-                // Find minimum overlap direction
-                let minOverlap = min(overlapLeft, overlapRight, overlapTop, overlapBottom)
+                // Find minimum X-axis adjustment
+                let leftAdjustment = abs(overlapLeft)
+                let rightAdjustment = abs(overlapRight)
 
-                if minOverlap == overlapLeft {
-                    // Push left
-                    newScaledX = otherRect.maxX
-                } else if minOverlap == overlapRight {
-                    // Push right
-                    newScaledX = otherRect.minX - display.scaledSize.width
-                } else if minOverlap == overlapTop {
-                    // Push up
-                    newScaledY = otherRect.maxY
+                if leftAdjustment < rightAdjustment {
+                    let candidateX = otherRect.maxX
+                    if minXAdjustment == nil || leftAdjustment < minXAdjustment!.amount {
+                        minXAdjustment = (leftAdjustment, candidateX)
+                    }
                 } else {
-                    // Push down
-                    newScaledY = otherRect.minY - display.scaledSize.height
+                    let candidateX = otherRect.minX - display.scaledSize.width
+                    if minXAdjustment == nil || rightAdjustment < minXAdjustment!.amount {
+                        minXAdjustment = (rightAdjustment, candidateX)
+                    }
                 }
 
-                // Recheck after adjustment (in case of multiple collisions)
-                break
+                // Find minimum Y-axis adjustment
+                let topAdjustment = abs(overlapTop)
+                let bottomAdjustment = abs(overlapBottom)
+
+                if topAdjustment < bottomAdjustment {
+                    let candidateY = otherRect.maxY
+                    if minYAdjustment == nil || topAdjustment < minYAdjustment!.amount {
+                        minYAdjustment = (topAdjustment, candidateY)
+                    }
+                } else {
+                    let candidateY = otherRect.minY - display.scaledSize.height
+                    if minYAdjustment == nil || bottomAdjustment < minYAdjustment!.amount {
+                        minYAdjustment = (bottomAdjustment, candidateY)
+                    }
+                }
+            }
+
+            // Apply adjustments for both axes
+            if let xAdj = minXAdjustment {
+                newScaledX = xAdj.newX
+            }
+            if let yAdj = minYAdjustment {
+                newScaledY = yAdj.newY
             }
         }
 
@@ -550,6 +622,21 @@ class CalibrationViewModel: ObservableObject {
     func resetToDefault() {
         let (_, physical) = calibrationManager.getCurrentDisplayConfiguration()
         loadDefaultPhysicalDisplays(physical)
+
+        // Regenerate default edge zones
+        let layouts = physicalDisplays.map { display in
+            PhysicalDisplayLayout(
+                identifier: display.identifier,
+                position: PhysicalDisplayLayout.PhysicalPoint(x: display.physicalPosition.x, y: display.physicalPosition.y),
+                size: PhysicalDisplayLayout.PhysicalSize(width: display.physicalSize.width, height: display.physicalSize.height)
+            )
+        }
+        let screens = NSScreen.screens
+        let (zones, pairs) = calibrationManager.generateDefaultEdgeZonePairs(displays: layouts, screens: screens)
+        edgeZones = zones
+        edgeZonePairs = pairs
+        selectedEdgeZoneIds = []  // Clear selection
+        NSLog("📍 Reset edge zones: \(edgeZones.count) zones and \(edgeZonePairs.count) pairs")
     }
 
     func saveCalibration() {
@@ -570,7 +657,9 @@ class CalibrationViewModel: ObservableObject {
 
         let configuration = DisplayConfiguration(
             displays: layouts,
-            timestamp: Date()
+            timestamp: Date(),
+            edgeZones: edgeZones,
+            edgeZonePairs: edgeZonePairs
         )
 
         calibrationManager.saveCalibration(configuration)

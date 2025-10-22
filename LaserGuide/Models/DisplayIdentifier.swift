@@ -49,8 +49,8 @@ struct EdgeZone: Codable, Identifiable, Hashable {
     let id: UUID
     let displayId: String         // DisplayIdentifier string representation
     let edge: EdgeDirection
-    let rangeStart: Double        // 0.0 - 1.0 (normalized position)
-    let rangeEnd: Double          // 0.0 - 1.0 (normalized position)
+    var rangeStart: Double        // 0.0 - 1.0 (normalized position)
+    var rangeEnd: Double          // 0.0 - 1.0 (normalized position)
 
     init(id: UUID = UUID(), displayId: String, edge: EdgeDirection, rangeStart: Double, rangeEnd: Double) {
         self.id = id

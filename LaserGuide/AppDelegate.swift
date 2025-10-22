@@ -101,7 +101,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.title = "Physical Display Layout Calibration"
         window.contentViewController = hostingController
         window.center()
-        window.level = .floating  // Keep window on top
+        // window.level = .floating  // Removed: Allow window to be covered by other windows
         window.makeKeyAndOrderFront(nil)
         window.isReleasedWhenClosed = false
 

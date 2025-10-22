@@ -107,6 +107,7 @@ class CalibrationDataManager {
     func generateDefaultEdgeZonePairs(displays: [PhysicalDisplayLayout], screens: [NSScreen]) -> (zones: [EdgeZone], pairs: [EdgeZonePair]) {
         var zones: [EdgeZone] = []
         var pairs: [EdgeZonePair] = []
+        var processedPairs: Set<Set<String>> = []  // Track processed display-edge pairs
 
         // Build screen lookup by DisplayIdentifier
         let screenByDisplayId: [String: NSScreen] = Dictionary(uniqueKeysWithValues:
@@ -138,6 +139,16 @@ class CalibrationDataManager {
                 )
 
                 for adjacency in adjacencies {
+                    let adjacencyKey1 = "\(displayId).\(edge)"
+                    let adjacencyKey2 = "\(adjacency.display.identifier.stringRepresentation).\(adjacency.edge)"
+                    let pairKey: Set<String> = [adjacencyKey1, adjacencyKey2]
+
+                    // Skip if we've already processed this pair (in reverse direction)
+                    if processedPairs.contains(pairKey) {
+                        continue
+                    }
+                    processedPairs.insert(pairKey)
+
                     // Calculate overlapping range in both edges
                     let (range1, range2) = calculateOverlapRanges(
                         display1: (display, screen),
@@ -172,11 +183,8 @@ class CalibrationDataManager {
             }
         }
 
-        // Deduplicate pairs (A↔B and B↔A are the same)
-        let uniquePairs = deduplicatePairs(pairs, zones: zones)
-
-        NSLog("✅ Generated \(zones.count) zones and \(uniquePairs.count) pairs")
-        return (zones, uniquePairs)
+        NSLog("✅ Generated \(zones.count) zones and \(pairs.count) pairs")
+        return (zones, pairs)
     }
 
     private struct Adjacency {
@@ -259,14 +267,17 @@ class CalibrationDataManager {
 
         case (.left, .right), (.right, .left):
             // Vertical edges - check Y overlap
+            // macOS logical coordinates: Y increases upward, origin at bottom-left
             let overlapStart = max(frame1.minY, frame2.minY)
             let overlapEnd = min(frame1.maxY, frame2.maxY)
 
-            // Normalize to [0,1] for each display
-            let normalized1Start = (overlapStart - frame1.minY) / frame1.height
-            let normalized1End = (overlapEnd - frame1.minY) / frame1.height
-            let normalized2Start = (overlapStart - frame2.minY) / frame2.height
-            let normalized2End = (overlapEnd - frame2.minY) / frame2.height
+            // Normalize to [0,1] for each display, but flip Y to match SwiftUI (origin at top)
+            // In macOS coords: minY=bottom, maxY=top
+            // In SwiftUI coords: 0=top, 1=bottom
+            let normalized1Start = (frame1.maxY - overlapEnd) / frame1.height  // Flip: top of overlap
+            let normalized1End = (frame1.maxY - overlapStart) / frame1.height  // Flip: bottom of overlap
+            let normalized2Start = (frame2.maxY - overlapEnd) / frame2.height
+            let normalized2End = (frame2.maxY - overlapStart) / frame2.height
 
             return (Double(normalized1Start)...Double(normalized1End),
                     Double(normalized2Start)...Double(normalized2End))
