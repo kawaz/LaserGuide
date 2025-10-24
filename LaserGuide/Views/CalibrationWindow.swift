@@ -170,48 +170,8 @@ struct CalibrationView: View {
 
     private func physicalDisplayView() -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Physical Layout (Drag to Arrange)")
-                    .font(.headline)
-
-                Spacer()
-
-                Button(action: {
-                    viewModel.copyDebugInfo()
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "doc.on.clipboard")
-                            .imageScale(.small)
-                        Text("Copy Debug Info")
-                    }
-                    .font(.caption)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-
-                Text("Show Original Zones")
-                    .font(.caption)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(viewModel.showingOriginalZones ? Color.blue : Color.gray.opacity(0.2))
-                    .foregroundColor(viewModel.showingOriginalZones ? .white : .primary)
-                    .cornerRadius(4)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 4)
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                    )
-                    .gesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { _ in
-                                viewModel.showingOriginalZones = true
-                            }
-                            .onEnded { _ in
-                                viewModel.showingOriginalZones = false
-                            }
-                    )
-            }
+            Text("Physical Layout (Drag to Arrange)")
+                .font(.headline)
 
             GeometryReader { geometry in
                 ZStack {
@@ -256,8 +216,46 @@ struct CalibrationView: View {
                 }
             }
 
-            Spacer()
-                .frame(height: 20)
+            HStack {
+                Spacer()
+
+                Button(action: {
+                    viewModel.copyDebugInfo()
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "doc.on.clipboard")
+                            .imageScale(.small)
+                        Text("Copy Debug Info")
+                    }
+                    .font(.caption)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
+                Text("Show Original Zones")
+                    .font(.caption)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(viewModel.showingOriginalZones ? Color.blue : Color.gray.opacity(0.2))
+                    .foregroundColor(viewModel.showingOriginalZones ? .white : .primary)
+                    .cornerRadius(4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { _ in
+                                viewModel.showingOriginalZones = true
+                            }
+                            .onEnded { _ in
+                                viewModel.showingOriginalZones = false
+                            }
+                    )
+            }
+            .frame(height: 20)
         }
     }
 
