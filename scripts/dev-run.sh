@@ -9,6 +9,9 @@ xcodebuild -project LaserGuide.xcodeproj \
   -configuration Debug \
   clean build \
   -derivedDataPath ./build-local \
+  CODE_SIGN_IDENTITY="Developer ID Application: ZunSystem Inc. (3QMEVK549R)" \
+  CODE_SIGN_STYLE=Manual \
+  DEVELOPMENT_TEAM=3QMEVK549R \
   2>&1 | grep -E "(error:|warning:|BUILD SUCCEEDED|BUILD FAILED)" || true
 
 if [ ! -d "build-local/Build/Products/Debug/LaserGuide.app" ]; then

@@ -5,6 +5,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var screenManager = ScreenManager.shared
     private var calibrationWindow: NSWindow?
+    private var aboutWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // 多重起動の防止
@@ -39,6 +40,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let menu = NSMenu()
+
+        // About項目
+        let aboutItem = NSMenuItem(
+            title: "About LaserGuide...",
+            action: #selector(openAbout),
+            keyEquivalent: ""
+        )
+        aboutItem.target = self
+        menu.addItem(aboutItem)
+
+        menu.addItem(NSMenuItem.separator())
 
         // キャリブレーション設定項目
         let calibrateItem = NSMenuItem(
@@ -81,6 +93,33 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(quitItem)
 
         statusItem?.menu = menu
+    }
+
+    @objc private func openAbout() {
+        // Close existing window if any
+        aboutWindow?.close()
+        aboutWindow = nil
+
+        // Create new about window
+        let contentView = AboutView()
+        let hostingController = NSHostingController(rootView: contentView)
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 380),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "About LaserGuide"
+        window.contentViewController = hostingController
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        window.isReleasedWhenClosed = false
+
+        // Activate the app to bring window to front
+        NSApp.activate(ignoringOtherApps: true)
+
+        aboutWindow = window
     }
 
     @objc private func openCalibration() {
