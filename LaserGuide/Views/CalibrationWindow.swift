@@ -310,18 +310,12 @@ struct LogicalDisplayRect: View {
                     .font(.system(size: size, weight: .bold, design: .rounded))
                     .foregroundColor(displayColor)
             } else {
-                // Normal: Display info (center)
-                VStack(alignment: .center, spacing: 4) {
-                    Text(display.name)
-                        .font(.caption)
-                        .fontWeight(.bold)
-                    Text(verbatim: "\(Int(display.frame.width))×\(Int(display.frame.height)) px")
-                        .font(.system(.caption2, design: .monospaced))
-                }
-                .padding(8)
-                .background(Color.black.opacity(0.6))
-                .foregroundColor(.white)
-                .cornerRadius(4)
+                // Normal: Display info (center) - adaptively scaled
+                displayInfoView(
+                    name: display.name,
+                    dimensions: "\(Int(display.frame.width))×\(Int(display.frame.height)) px",
+                    displaySize: display.scaledFrame.size
+                )
             }
 
             // Bottom-left coordinate
@@ -368,6 +362,36 @@ struct LogicalDisplayRect: View {
 
             NSLog("🟦 [DisplayRect] tap: selecting \(zonesToSelect.count) zones (including pairs)")
             viewModel.selectedEdgeZoneIds = zonesToSelect
+        }
+    }
+
+    /// Display info with clipping to stay within display bounds
+    @ViewBuilder
+    private func displayInfoView(name: String, dimensions: String, displaySize: CGSize) -> some View {
+        // Reserve minimal margin from border (just inside the border line)
+        let margin: CGFloat = 2
+        let maxWidth = displaySize.width - margin * 2
+        let maxHeight = displaySize.height - margin * 2
+
+        // Only show if there's enough space
+        if maxWidth > 20 && maxHeight > 20 {
+            VStack(alignment: .center, spacing: 2) {
+                Text(name)
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .lineLimit(1)
+                Text(verbatim: dimensions)
+                    .font(.system(.caption2, design: .monospaced))
+                    .lineLimit(1)
+            }
+            .padding(6)
+            .background(Color.black.opacity(0.6))
+            .foregroundColor(.white)
+            .cornerRadius(4)
+            .frame(maxWidth: maxWidth, maxHeight: maxHeight)
+            .clipped()
+        } else {
+            EmptyView()
         }
     }
 
@@ -441,18 +465,12 @@ struct PhysicalDisplayRect: View {
                     .font(.system(size: size, weight: .bold, design: .rounded))
                     .foregroundColor(displayColor)
             } else {
-                // Normal: Display info (center)
-                VStack(alignment: .center, spacing: 2) {
-                    Text(display.name)
-                        .font(.caption)
-                        .fontWeight(.bold)
-                    Text(verbatim: "\(Int(display.physicalSize.width))×\(Int(display.physicalSize.height)) mm")
-                        .font(.system(.caption2, design: .monospaced))
-                }
-                .padding(6)
-                .background(Color.black.opacity(0.7))
-                .foregroundColor(.white)
-                .cornerRadius(4)
+                // Normal: Display info (center) - adaptively scaled
+                displayInfoView(
+                    name: display.name,
+                    dimensions: "\(Int(display.physicalSize.width))×\(Int(display.physicalSize.height)) mm",
+                    displaySize: display.scaledSize
+                )
             }
 
             // Bottom-left coordinate (updates during drag)
@@ -483,14 +501,12 @@ struct PhysicalDisplayRect: View {
                     viewModel.dragOffsets[display.id] = value.translation
                 }
                 .onChanged { value in
-                    NSLog("🟢 [PhysicalDisplayRect] drag: display=\(display.name) translation=(\(String(format: "%.1f", value.translation.width)),\(String(format: "%.1f", value.translation.height)))")
                     if !isDragging {
                         isDragging = true
                         viewModel.startContinuousFlash(displayNumber: displayNumber)
                     }
                 }
                 .onEnded { value in
-                    NSLog("🟢 [PhysicalDisplayRect] drag ended: display=\(display.name)")
                     isDragging = false
                     viewModel.stopContinuousFlash()
 
@@ -505,6 +521,36 @@ struct PhysicalDisplayRect: View {
                     }
                 }
         )
+    }
+
+    /// Display info with clipping to stay within display bounds
+    @ViewBuilder
+    private func displayInfoView(name: String, dimensions: String, displaySize: CGSize) -> some View {
+        // Reserve minimal margin from border (just inside the border line)
+        let margin: CGFloat = 2
+        let maxWidth = displaySize.width - margin * 2
+        let maxHeight = displaySize.height - margin * 2
+
+        // Only show if there's enough space
+        if maxWidth > 20 && maxHeight > 20 {
+            VStack(alignment: .center, spacing: 2) {
+                Text(name)
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .lineLimit(1)
+                Text(verbatim: dimensions)
+                    .font(.system(.caption2, design: .monospaced))
+                    .lineLimit(1)
+            }
+            .padding(6)
+            .background(Color.black.opacity(0.7))
+            .foregroundColor(.white)
+            .cornerRadius(4)
+            .frame(maxWidth: maxWidth, maxHeight: maxHeight)
+            .clipped()
+        } else {
+            EmptyView()
+        }
     }
 
     @ViewBuilder
@@ -1119,7 +1165,6 @@ struct SimpleEdgeZoneHandle: View {
         let handleSize: CGFloat = 8
         let hitAreaSize: CGFloat = 20  // Larger hit area
         let handlePos = getHandlePositionInDisplay()
-        let _ = NSLog("🔶 [SimpleEdgeZoneHandle] body: display=\(displayName) edge=\(zone.edge) isStart=\(isStart) pos=(\(String(format: "%.1f", handlePos.x)),\(String(format: "%.1f", handlePos.y)))")
 
         // Determine if this side has a block zone
         let currentValue = isStart ? zone.rangeStart : zone.rangeEnd
@@ -1156,13 +1201,11 @@ struct SimpleEdgeZoneHandle: View {
         .frame(width: hitAreaSize, height: hitAreaSize)
         .position(x: handlePos.x, y: handlePos.y)
         .onHover { hovering in
-            NSLog("🟡 [SimpleEdgeZoneHandle] hover: display=\(displayName) edge=\(zone.edge) isStart=\(isStart) hovering=\(hovering) pos=(\(String(format: "%.1f", handlePos.x)),\(String(format: "%.1f", handlePos.y)))")
             isHovered = hovering
         }
         .gesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { value in
-                    NSLog("🟠 [SimpleEdgeZoneHandle] drag: display=\(displayName) edge=\(zone.edge) isStart=\(isStart) translation=(\(String(format: "%.1f", value.translation.width)),\(String(format: "%.1f", value.translation.height)))")
                     let offset = getOffsetAlongEdge(translation: value.translation)
                     updateZoneRange(offset: offset, isInitial: value.translation == .zero)
                 }

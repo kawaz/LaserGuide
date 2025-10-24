@@ -589,14 +589,10 @@ class CalibrationViewModel: ObservableObject {
         let physicalWidth = allPhysicalMaxX - allPhysicalMinX
         let physicalHeight = allPhysicalMaxY - allPhysicalMinY
 
-        NSLog("🔧 refitToCanvas: physical bounds (\(allPhysicalMinX), \(allPhysicalMinY)) to (\(allPhysicalMaxX), \(allPhysicalMaxY)), size \(physicalWidth)x\(physicalHeight) mm")
-
-        // Calculate optimal scale to fit in canvas
+        // Calculate optimal scale to fit in canvas (allow both zoom in and zoom out)
         let scaleX = (canvasSize.width * 0.9) / physicalWidth
         let scaleY = (canvasSize.height * 0.9) / physicalHeight
-        let newScale = min(scaleX, scaleY, 0.5)
-
-        NSLog("🔧 refitToCanvas: canvas size \(canvasSize.width)x\(canvasSize.height), calculated scale \(newScale) (scaleX=\(scaleX), scaleY=\(scaleY))")
+        let newScale = min(scaleX, scaleY)  // Remove 0.5 limit to allow zoom in
 
         // Check if scale needs update (allow 5% tolerance, unless forced)
         if !force {
@@ -638,8 +634,6 @@ class CalibrationViewModel: ObservableObject {
             let canvasX = marginX + scaledX
             let canvasY = marginY + flippedY
 
-            NSLog("🎯 refitToCanvas: \(updatedDisplays[i].name) physical (\(physicalPos.x), \(physicalPos.y)) → canvas (\(canvasX), \(canvasY))")
-
             updatedDisplays[i].scaledPosition = CGPoint(x: canvasX, y: canvasY)
             updatedDisplays[i].scaledSize = CGSize(width: scaledWidth, height: scaledHeight)
         }
@@ -669,6 +663,9 @@ class CalibrationViewModel: ObservableObject {
         defaultEdgeZonePairs = pairs
         selectedEdgeZoneIds = []  // Clear selection
         NSLog("📍 Reset edge zones: \(edgeZones.count) zones and \(edgeZonePairs.count) pairs")
+
+        // Notify laser display for real-time preview
+        notifyCalibrationChange()
     }
 
     func saveCalibration() {
@@ -871,8 +868,6 @@ class CalibrationViewModel: ObservableObject {
 
         // Move heavy JSON generation to background thread
         DispatchQueue.global(qos: .userInitiated).async {
-            NSLog("🔄 Starting debug info generation on background thread")
-
             var debugInfo: [String: Any] = [:]
 
             // App version
@@ -997,29 +992,21 @@ class CalibrationViewModel: ObservableObject {
             }
 
             // Convert to JSON
-            NSLog("🔄 Converting to JSON... debugInfo keys: \(debugInfo.keys)")
             do {
                 let jsonData = try JSONSerialization.data(withJSONObject: debugInfo, options: [.prettyPrinted, .sortedKeys])
-                NSLog("✅ JSON data created: \(jsonData.count) bytes")
 
                 if let jsonString = String(data: jsonData, encoding: .utf8) {
-                    NSLog("✅ JSON string created: \(jsonString.count) characters")
-
                     // Copy to clipboard on main thread
                     DispatchQueue.main.async {
                         let pasteboard = NSPasteboard.general
                         pasteboard.clearContents()
-                        let success = pasteboard.setString(jsonString, forType: .string)
-
-                        NSLog("📋 Pasteboard setString result: \(success)")
-                        NSLog("📋 Debug info copied to clipboard (\(jsonString.count) characters)")
+                        _ = pasteboard.setString(jsonString, forType: .string)
                     }
                 } else {
                     NSLog("❌ Failed to convert JSON data to string")
                 }
             } catch {
                 NSLog("❌ Failed to generate debug info: \(error)")
-                NSLog("❌ Error description: \(error.localizedDescription)")
             }
         }
     }
