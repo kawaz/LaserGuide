@@ -121,8 +121,8 @@ class CalibrationViewModel: ObservableObject {
         let oldSize = logicalCanvasSize
         logicalCanvasSize = newSize
 
-        // Force recalculation if canvas size changed significantly
-        if abs(oldSize.width - newSize.width) > 10 || abs(oldSize.height - newSize.height) > 10 {
+        // Force recalculation if canvas size changed
+        if oldSize != newSize {
             // Reload logical displays with new canvas size
             let (logical, _) = calibrationManager.getCurrentDisplayConfiguration()
             loadLogicalDisplays(logical)

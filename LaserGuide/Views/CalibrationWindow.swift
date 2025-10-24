@@ -36,32 +36,40 @@ struct CalibrationView: View {
             headerView
 
             // Main content: Logical vs Physical comparison
-            HStack(alignment: .top, spacing: 20) {
-                // Left: Logical coordinate system (resizable)
-                logicalDisplayView()
-                    .frame(width: logicalWidth)
+            GeometryReader { containerGeometry in
+                HStack(alignment: .top, spacing: 20) {
+                    // Left: Logical coordinate system (resizable)
+                    logicalDisplayView()
+                        .frame(width: logicalWidth)
 
-                // Resizable divider
-                Rectangle()
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 6)
-                    .gesture(
-                        DragGesture()
-                            .onChanged { value in
-                                let newWidth = logicalWidth + value.translation.width
-                                logicalWidth = min(max(newWidth, 250), 800)
+                    // Resizable divider
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 6)
+                        .gesture(
+                            DragGesture()
+                                .onChanged { value in
+                                    let containerWidth = containerGeometry.size.width
+                                    let minSideWidth: CGFloat = 50  // Minimum width for both sides (just enough for UI)
+                                    let dividerWidth: CGFloat = 6
+                                    let spacing: CGFloat = 20
+                                    let maxLogicalWidth = containerWidth - minSideWidth - dividerWidth - spacing * 2
+
+                                    let newWidth = logicalWidth + value.translation.width
+                                    logicalWidth = min(max(newWidth, minSideWidth), maxLogicalWidth)
+                                }
+                        )
+                        .onHover { hovering in
+                            if hovering {
+                                NSCursor.resizeLeftRight.push()
+                            } else {
+                                NSCursor.pop()
                             }
-                    )
-                    .onHover { hovering in
-                        if hovering {
-                            NSCursor.resizeLeftRight.push()
-                        } else {
-                            NSCursor.pop()
                         }
-                    }
 
-                // Right: Physical coordinate system (takes remaining space)
-                physicalDisplayView()
+                    // Right: Physical coordinate system (takes remaining space)
+                    physicalDisplayView()
+                }
             }
             .padding()
 
@@ -715,9 +723,9 @@ struct EdgeZoneInset: View {
         let isDraggingDisplay = viewModel.dragOffsets.values.contains(where: { $0 != .zero })
 
         return ZStack(alignment: .topLeading) {
-            // Edge zone line (visible)
+            // Edge zone line (visible, opaque to be visible on any background color)
             Rectangle()
-                .fill(isSelected ? Color.cyan.opacity(0.8) : Color.cyan.opacity(0.6))
+                .fill(Color.cyan)
                 .frame(width: zoneRect.width, height: zoneRect.height)
                 .position(x: zoneRect.midX, y: zoneRect.midY)
                 .allowsHitTesting(false)  // Hit testing handled by wider invisible layer
