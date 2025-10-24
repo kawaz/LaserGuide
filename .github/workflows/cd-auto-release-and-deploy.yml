@@ -243,6 +243,57 @@ jobs:
 
           echo "✅ Created ${ZIP_NAME}"
 
+      - name: Notarize App
+        if: steps.check_changes.outputs.skip_release != 'true'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -e
+          ZIP_NAME="${{ env.ZIP_NAME }}"
+
+          echo "📤 Submitting app for notarization..."
+          xcrun notarytool submit "$ZIP_NAME" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait \
+            --timeout 10m \
+            2>&1 | tee /tmp/notarization_output.txt
+
+          # Check notarization status
+          if grep -q "status: Accepted" /tmp/notarization_output.txt; then
+            echo "✅ Notarization succeeded"
+          else
+            echo "❌ Notarization failed"
+            cat /tmp/notarization_output.txt
+            exit 1
+          fi
+
+      - name: Staple Notarization Ticket
+        if: steps.check_changes.outputs.skip_release != 'true'
+        run: |
+          set -e
+          ZIP_NAME="${{ env.ZIP_NAME }}"
+
+          # Extract the app
+          unzip -q "$ZIP_NAME"
+
+          echo "📎 Stapling notarization ticket..."
+          xcrun stapler staple LaserGuide.app
+
+          # Verify stapling
+          echo "🔍 Verifying staple..."
+          xcrun stapler validate LaserGuide.app
+
+          # Re-create ZIP with stapled app
+          rm "$ZIP_NAME"
+          zip -r "$ZIP_NAME" LaserGuide.app
+          rm -rf LaserGuide.app
+
+          echo "✅ Notarization ticket stapled and re-zipped"
+
       - name: Push tag
         if: steps.check_changes.outputs.skip_release != 'true'
         run: |

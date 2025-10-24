@@ -14,6 +14,20 @@ class CalibrationViewModel: ObservableObject {
     @Published var edgeZonePairs: [EdgeZonePair] = []  // Zone pairings
     @Published var dragOffsets: [UUID: CGSize] = [:]  // Track drag offsets for each display
     @Published var selectedEdgeZoneIds: Set<UUID> = []  // Currently selected edge zones (shows handles for all)
+    @Published var showingOriginalZones: Bool = false  // True when showing original (default) zones for comparison
+
+    // Default edge zones (generated from physical layout, for comparison)
+    private var defaultEdgeZones: [EdgeZone] = []
+    private var defaultEdgeZonePairs: [EdgeZonePair] = []
+
+    // Computed properties to get the zones to display
+    var displayedEdgeZones: [EdgeZone] {
+        showingOriginalZones ? defaultEdgeZones : edgeZones
+    }
+
+    var displayedEdgeZonePairs: [EdgeZonePair] {
+        showingOriginalZones ? defaultEdgeZonePairs : edgeZonePairs
+    }
 
     private let calibrationManager = CalibrationDataManager.shared
     private var logicalCanvasSize = CGSize(width: 300, height: 300)  // Logical canvas size
@@ -66,9 +80,19 @@ class CalibrationViewModel: ObservableObject {
                 let (zones, pairs) = calibrationManager.generateDefaultEdgeZonePairs(displays: layouts, screens: screens)
                 edgeZones = zones
                 edgeZonePairs = pairs
+                // Store as default zones for comparison
+                defaultEdgeZones = zones
+                defaultEdgeZonePairs = pairs
                 NSLog("📍 Generated \(edgeZones.count) zones and \(edgeZonePairs.count) pairs")
             } else {
                 NSLog("📍 Loaded \(edgeZones.count) zones and \(edgeZonePairs.count) pairs from saved config")
+                // Generate default zones for comparison (using same layouts)
+                let layouts = savedConfig.displays
+                let screens = NSScreen.screens
+                let (zones, pairs) = calibrationManager.generateDefaultEdgeZonePairs(displays: layouts, screens: screens)
+                defaultEdgeZones = zones
+                defaultEdgeZonePairs = pairs
+                NSLog("📍 Generated default zones for comparison: \(defaultEdgeZones.count) zones and \(defaultEdgeZonePairs.count) pairs")
             }
         } else {
             loadDefaultPhysicalDisplays(physical)
@@ -85,6 +109,9 @@ class CalibrationViewModel: ObservableObject {
             let (zones, pairs) = calibrationManager.generateDefaultEdgeZonePairs(displays: layouts, screens: screens)
             edgeZones = zones
             edgeZonePairs = pairs
+            // Store as default zones for comparison
+            defaultEdgeZones = zones
+            defaultEdgeZonePairs = pairs
             NSLog("📍 Generated \(edgeZones.count) zones and \(edgeZonePairs.count) pairs")
         }
     }
@@ -107,8 +134,8 @@ class CalibrationViewModel: ObservableObject {
         let oldSize = canvasSize
         canvasSize = newSize
 
-        // Force recalculation if canvas size changed significantly
-        if abs(oldSize.width - newSize.width) > 10 || abs(oldSize.height - newSize.height) > 10 {
+        // Force recalculation if canvas size changed
+        if oldSize != newSize {
             // Recalculate optimal scale and update all positions
             refitToCanvas(force: true)
         }
@@ -356,26 +383,10 @@ class CalibrationViewModel: ObservableObject {
     }
 
     private func loadPhysicalDisplaysFromCalibration(_ config: DisplayConfiguration, screenInfos: [ScreenInfo]) {
-        // Calculate bounds of saved physical positions
-        let allX = config.displays.map { $0.position.x }
-        let allY = config.displays.map { $0.position.y }
-        let minPhysicalX = allX.min() ?? 0
-        let maxPhysicalX = (config.displays.map { $0.position.x + $0.size.width }).max() ?? 1000
-        let minPhysicalY = allY.min() ?? 0
-        let maxPhysicalY = (config.displays.map { $0.position.y + $0.size.height }).max() ?? 1000
-
-        let totalPhysicalWidth = maxPhysicalX - minPhysicalX
-        let totalPhysicalHeight = maxPhysicalY - minPhysicalY
-
-        let scaleX = (canvasSize.width * 0.9) / totalPhysicalWidth
-        let scaleY = (canvasSize.height * 0.9) / totalPhysicalHeight
-        let fitScale = min(scaleX, scaleY, 0.5)
-        currentScale = fitScale
-        updateScaleInfo()
-
         // Create displayID -> colorIndex mapping from logical displays
         let colorIndexMap = Dictionary(uniqueKeysWithValues: logicalDisplays.map { ($0.displayID, $0.colorIndex) })
 
+        // Load physical positions from saved config, but defer scaled position calculation to refitToCanvas
         physicalDisplays = config.displays.compactMap { layout in
             guard let info = screenInfos.first(where: {
                 DisplayIdentifier(displayID: $0.displayID) == layout.identifier
@@ -383,26 +394,7 @@ class CalibrationViewModel: ObservableObject {
                 return nil
             }
 
-            // Convert physical mm to canvas coordinates (same logic as loadDefaultPhysicalDisplays)
-            let relativeX = layout.position.x - minPhysicalX
-            let relativeY = layout.position.y - minPhysicalY
-
-            let scaledX = relativeX * fitScale
-            let scaledY = relativeY * fitScale
-            let scaledWidth = layout.size.width * fitScale
-            let scaledHeight = layout.size.height * fitScale
-
-            // Flip Y axis: physical bottom (Y=0) becomes canvas bottom (Y=max)
-            let totalScaledHeight = totalPhysicalHeight * fitScale
-            let flippedY = totalScaledHeight - scaledY - scaledHeight
-
-            // Add margin to center
-            let marginX = (canvasSize.width - totalPhysicalWidth * fitScale) / 2
-            let marginY = (canvasSize.height - totalPhysicalHeight * fitScale) / 2
-
-            let canvasX = marginX + scaledX
-            let canvasY = marginY + flippedY
-
+            // Use placeholder scaled positions - these will be recalculated by refitToCanvas
             return PhysicalDisplay(
                 id: UUID(),
                 displayID: info.displayID,
@@ -410,8 +402,8 @@ class CalibrationViewModel: ObservableObject {
                 name: info.name,
                 physicalPosition: CGPoint(x: layout.position.x, y: layout.position.y),
                 physicalSize: CGSize(width: layout.size.width, height: layout.size.height),
-                scaledPosition: CGPoint(x: canvasX, y: canvasY),
-                scaledSize: CGSize(width: scaledWidth, height: scaledHeight),
+                scaledPosition: CGPoint(x: 0, y: 0),  // Will be recalculated
+                scaledSize: CGSize(width: 0, height: 0),  // Will be recalculated
                 isBuiltIn: info.isBuiltIn,
                 resolution: CGSize(width: info.screen.frame.width * info.screen.backingScaleFactor,
                                  height: info.screen.frame.height * info.screen.backingScaleFactor),
@@ -419,6 +411,9 @@ class CalibrationViewModel: ObservableObject {
                 colorIndex: colorIndexMap[info.displayID] ?? 0
             )
         }
+
+        // Trigger immediate refit with current canvas size (will be called again with correct size later)
+        refitToCanvas(force: true)
     }
 
     func updatePosition(for id: UUID, offset: CGSize) {
@@ -635,6 +630,9 @@ class CalibrationViewModel: ObservableObject {
         let (zones, pairs) = calibrationManager.generateDefaultEdgeZonePairs(displays: layouts, screens: screens)
         edgeZones = zones
         edgeZonePairs = pairs
+        // Store as default zones for comparison
+        defaultEdgeZones = zones
+        defaultEdgeZonePairs = pairs
         selectedEdgeZoneIds = []  // Clear selection
         NSLog("📍 Reset edge zones: \(edgeZones.count) zones and \(edgeZonePairs.count) pairs")
     }

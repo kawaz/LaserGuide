@@ -162,8 +162,32 @@ struct CalibrationView: View {
 
     private func physicalDisplayView() -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Physical Layout (Drag to Arrange)")
-                .font(.headline)
+            HStack {
+                Text("Physical Layout (Drag to Arrange)")
+                    .font(.headline)
+
+                Spacer()
+
+                Text("Show Original Zones")
+                    .font(.caption)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(viewModel.showingOriginalZones ? Color.blue : Color.gray.opacity(0.2))
+                    .foregroundColor(viewModel.showingOriginalZones ? .white : .primary)
+                    .cornerRadius(4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+                    .onContinuousHover { phase in
+                        switch phase {
+                        case .active(_):
+                            viewModel.showingOriginalZones = true
+                        case .ended:
+                            viewModel.showingOriginalZones = false
+                        }
+                    }
+            }
 
             GeometryReader { geometry in
                 ZStack {
@@ -193,8 +217,8 @@ struct CalibrationView: View {
 
                     // Draw edge zone overlay
                     EdgeZoneOverlay(
-                        edgeZones: viewModel.edgeZones,
-                        edgeZonePairs: viewModel.edgeZonePairs,
+                        edgeZones: viewModel.displayedEdgeZones,
+                        edgeZonePairs: viewModel.displayedEdgeZonePairs,
                         physicalDisplays: viewModel.physicalDisplays,
                         canvasSize: geometry.size,
                         viewModel: viewModel
