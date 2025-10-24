@@ -194,14 +194,15 @@ struct CalibrationView: View {
                         RoundedRectangle(cornerRadius: 4)
                             .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                     )
-                    .onContinuousHover { phase in
-                        switch phase {
-                        case .active(_):
-                            viewModel.showingOriginalZones = true
-                        case .ended:
-                            viewModel.showingOriginalZones = false
-                        }
-                    }
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { _ in
+                                viewModel.showingOriginalZones = true
+                            }
+                            .onEnded { _ in
+                                viewModel.showingOriginalZones = false
+                            }
+                    )
             }
 
             GeometryReader { geometry in
@@ -410,7 +411,7 @@ struct PhysicalDisplayRect: View {
                 .border(displayColor, width: 2)
 
             // Edge zones for this display
-            let displayZones = viewModel.edgeZones.filter { $0.displayId == display.identifier.stringRepresentation }
+            let displayZones = viewModel.displayedEdgeZones.filter { $0.displayId == display.identifier.stringRepresentation }
             let isDraggingDisplay = viewModel.dragOffsets.values.contains(where: { $0 != .zero })
 
             // Draw block zones (border color lines for non-navigable areas)
