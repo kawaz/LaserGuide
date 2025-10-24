@@ -512,29 +512,21 @@ class CalibrationViewModel: ObservableObject {
             }
         }
 
+        // Calculate change in scaled position
+        let deltaScaledX = newScaledX - display.scaledPosition.x
+        let deltaScaledY = newScaledY - display.scaledPosition.y
+
         // Update scaled position
         display.scaledPosition = CGPoint(x: newScaledX, y: newScaledY)
 
-        // Update physical position from canvas position
-        // Calculate physical bounds for proper conversion
-        let allPhysicalMinX = physicalDisplays.map { $0.physicalPosition.x }.min() ?? 0
-        let allPhysicalMinY = physicalDisplays.map { $0.physicalPosition.y }.min() ?? 0
-        let allPhysicalMaxX = physicalDisplays.map { $0.physicalPosition.x + $0.physicalSize.width }.max() ?? 1000
-        let allPhysicalMaxY = physicalDisplays.map { $0.physicalPosition.y + $0.physicalSize.height }.max() ?? 1000
-        let physicalWidth = allPhysicalMaxX - allPhysicalMinX
-        let physicalHeight = allPhysicalMaxY - allPhysicalMinY
-
-        let totalScaledHeight = physicalHeight * currentScale
-        let marginX = (canvasSize.width - physicalWidth * currentScale) / 2
-        let marginY = (canvasSize.height - totalScaledHeight) / 2
-
-        let relativeX = newScaledX - marginX
-        let relativeY = newScaledY - marginY
-        let unflippedY = totalScaledHeight - relativeY - display.scaledSize.height
+        // Update physical position using delta (preserves relative positions)
+        // Physical Y-axis is inverted (increases upward), so we subtract deltaScaledY
+        let deltaPhysicalX = deltaScaledX / currentScale
+        let deltaPhysicalY = -deltaScaledY / currentScale  // Y-axis inversion
 
         display.physicalPosition = CGPoint(
-            x: allPhysicalMinX + relativeX / currentScale,
-            y: allPhysicalMinY + unflippedY / currentScale
+            x: display.physicalPosition.x + deltaPhysicalX,
+            y: display.physicalPosition.y + deltaPhysicalY
         )
 
         physicalDisplays[index] = display
@@ -839,6 +831,8 @@ class CalibrationViewModel: ObservableObject {
         let edgeZonePairsCopy = self.edgeZonePairs
         let configKey = self.currentConfigKey
         let savedConfig = calibrationManager.loadCalibration()
+        let canvasSizeCopy = self.canvasSize
+        let currentScaleCopy = self.currentScale
 
         // Move heavy JSON generation to background thread
         DispatchQueue.global(qos: .userInitiated).async {
@@ -853,6 +847,10 @@ class CalibrationViewModel: ObservableObject {
 
             // macOS version
             debugInfo["macos_version"] = "\(osVersion.majorVersion).\(osVersion.minorVersion).\(osVersion.patchVersion)"
+
+            // Canvas and scale info
+            debugInfo["canvas_size"] = ["width": canvasSizeCopy.width, "height": canvasSizeCopy.height]
+            debugInfo["current_scale"] = currentScaleCopy
 
             // Screen information
             var screensInfo: [[String: Any]] = []
@@ -879,6 +877,8 @@ class CalibrationViewModel: ObservableObject {
                 displayInfo["is_built_in"] = display.isBuiltIn
                 displayInfo["physical_position"] = ["x": display.physicalPosition.x, "y": display.physicalPosition.y]
                 displayInfo["physical_size"] = ["width": display.physicalSize.width, "height": display.physicalSize.height]
+                displayInfo["scaled_position"] = ["x": display.scaledPosition.x, "y": display.scaledPosition.y]
+                displayInfo["scaled_size"] = ["width": display.scaledSize.width, "height": display.scaledSize.height]
                 displayInfo["resolution"] = ["width": display.resolution.width, "height": display.resolution.height]
                 displayInfo["ppi"] = display.ppi
                 physicalDisplaysInfo.append(displayInfo)
