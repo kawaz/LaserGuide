@@ -90,11 +90,42 @@ struct LaserCanvasView: View {
         return CGPoint(x: localX, y: convertedY)
     }
 
+    /// Check if a point is contained in a rectangle using half-open interval semantics.
+    ///
+    /// This uses [minX, maxX) × [minY, maxY) instead of CGRect.contains() which uses closed intervals.
+    /// This is critical for multi-display setups where adjacent displays share boundary coordinates.
+    ///
+    /// **Why not use CGRect.contains()?**
+    /// CGRect.contains() uses closed interval [minX, maxX] × [minY, maxY], which causes boundary
+    /// points to belong to multiple displays. For example, if Display A ends at x=1000 and Display B
+    /// starts at x=1000, point (1000, y) would match BOTH displays, causing incorrect laser rendering.
+    ///
+    /// Half-open intervals ensure each point belongs to exactly one display, preventing this ambiguity.
+    ///
+    /// - Parameters:
+    ///   - point: The point to test
+    ///   - rect: The rectangle to test against
+    /// - Returns: True if point is in [rect.minX, rect.maxX) × [rect.minY, rect.maxY)
+    @inline(__always)
+    private func containsPointHalfOpen(_ point: CGPoint, in rect: CGRect) -> Bool {
+        return point.x >= rect.minX && point.x < rect.maxX &&
+               point.y >= rect.minY && point.y < rect.maxY
+    }
+
     /// Convert global mouse location to physical coordinates (mm)
     private func globalToPhysical(_ globalLocation: NSPoint, config: DisplayConfiguration) -> CGPoint? {
-        // Find which display the mouse is on
+        // Find which display the mouse is on using half-open interval containment
         let allScreens = NSScreen.screens
-        guard let mouseScreen = allScreens.first(where: { $0.frame.contains(globalLocation) }) else {
+        let mouseScreen = allScreens.first(where: { screen in
+            containsPointHalfOpen(globalLocation, in: screen.frame)
+        }) ?? allScreens.min(by: { screen1, screen2 in
+            // Fallback: If point is exactly on maxX or maxY boundary, choose nearest display
+            let dist1 = hypot(globalLocation.x - screen1.frame.midX, globalLocation.y - screen1.frame.midY)
+            let dist2 = hypot(globalLocation.x - screen2.frame.midX, globalLocation.y - screen2.frame.midY)
+            return dist1 < dist2
+        })
+
+        guard let mouseScreen = mouseScreen else {
             return nil
         }
 
