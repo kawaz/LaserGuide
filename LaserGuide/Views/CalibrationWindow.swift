@@ -168,6 +168,21 @@ struct CalibrationView: View {
 
                 Spacer()
 
+                Button(action: {
+                    viewModel.copyDebugInfo()
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "doc.on.clipboard")
+                            .imageScale(.small)
+                        Text("Copy Debug Info")
+                    }
+                    .font(.caption)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
                 Text("Show Original Zones")
                     .font(.caption)
                     .padding(.horizontal, 8)
@@ -369,10 +384,14 @@ struct PhysicalDisplayRect: View {
     @GestureState private var dragOffset = CGSize.zero
 
     // Calculate current physical position (considering drag offset)
+    // During drag: show raw physical position (lets user see how much they moved)
+    // After drop: normalizePhysicalPositions() will reset origin display to (0,0)
     private var currentPhysicalPosition: CGPoint {
         if dragOffset == .zero {
             return display.physicalPosition
         }
+
+        // Calculate raw physical position from canvas position
         let currentCanvasPosition = CGPoint(
             x: display.scaledPosition.x + dragOffset.width,
             y: display.scaledPosition.y + dragOffset.height

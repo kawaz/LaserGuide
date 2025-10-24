@@ -531,11 +531,45 @@ class CalibrationViewModel: ObservableObject {
 
         physicalDisplays[index] = display
 
-        // Always refit to canvas after drag to ensure proper scaling and centering
+        // Normalize physical positions to keep origin display at (0, 0)
+        // This must be done BEFORE refitToCanvas so that the canvas calculation
+        // uses the normalized physical positions
+        normalizePhysicalPositions()
+
+        // Refit to canvas after normalization to ensure proper scaling and centering
+        // This recalculates scaled positions from the normalized physical positions
         refitToCanvas(force: true)
 
         // Notify laser display for real-time preview
         notifyCalibrationChange()
+    }
+
+    /// Normalize physical positions so that the origin display is at (0, 0)
+    /// The origin display is the one containing logical point (0, 0)
+    private func normalizePhysicalPositions() {
+        let (logical, _) = calibrationManager.getCurrentDisplayConfiguration()
+        guard let originDisplay = logical.first(where: { $0.frame.contains(CGPoint(x: 0, y: 0)) }),
+              let originPhysical = physicalDisplays.first(where: {
+                  DisplayIdentifier(displayID: $0.displayID) == originDisplay.identifier
+              }) else {
+            return
+        }
+
+        let offsetX = originPhysical.physicalPosition.x
+        let offsetY = originPhysical.physicalPosition.y
+
+        // Skip if already normalized
+        if offsetX == 0 && offsetY == 0 {
+            return
+        }
+
+        // Apply offset to all displays
+        for i in 0..<physicalDisplays.count {
+            physicalDisplays[i].physicalPosition = CGPoint(
+                x: physicalDisplays[i].physicalPosition.x - offsetX,
+                y: physicalDisplays[i].physicalPosition.y - offsetY
+            )
+        }
     }
 
     private func updatePhysicalPositionsFromCanvas() {
@@ -645,7 +679,8 @@ class CalibrationViewModel: ObservableObject {
             NSLog("💾 Saving display: \(display.name) at physical (\(display.physicalPosition.x), \(display.physicalPosition.y))")
         }
 
-        // Physical positions are already up-to-date from updatePhysicalPositionsFromCanvas()
+        // Physical positions are already normalized by normalizePhysicalPositions()
+        // (called after every drag operation)
         let layouts = physicalDisplays.map { display in
             PhysicalDisplayLayout(
                 identifier: display.identifier,
