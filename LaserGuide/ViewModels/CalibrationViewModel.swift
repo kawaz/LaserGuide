@@ -394,6 +394,8 @@ class CalibrationViewModel: ObservableObject {
                 return nil
             }
 
+            NSLog("📦 Loading saved physical display: \(info.name) at physical (\(layout.position.x), \(layout.position.y)) size \(layout.size.width)x\(layout.size.height) mm")
+
             // Use placeholder scaled positions - these will be recalculated by refitToCanvas
             return PhysicalDisplay(
                 id: UUID(),
@@ -561,10 +563,14 @@ class CalibrationViewModel: ObservableObject {
         let physicalWidth = allPhysicalMaxX - allPhysicalMinX
         let physicalHeight = allPhysicalMaxY - allPhysicalMinY
 
+        NSLog("🔧 refitToCanvas: physical bounds (\(allPhysicalMinX), \(allPhysicalMinY)) to (\(allPhysicalMaxX), \(allPhysicalMaxY)), size \(physicalWidth)x\(physicalHeight) mm")
+
         // Calculate optimal scale to fit in canvas
         let scaleX = (canvasSize.width * 0.9) / physicalWidth
         let scaleY = (canvasSize.height * 0.9) / physicalHeight
         let newScale = min(scaleX, scaleY, 0.5)
+
+        NSLog("🔧 refitToCanvas: canvas size \(canvasSize.width)x\(canvasSize.height), calculated scale \(newScale) (scaleX=\(scaleX), scaleY=\(scaleY))")
 
         // Check if scale needs update (allow 5% tolerance, unless forced)
         if !force {
@@ -606,6 +612,8 @@ class CalibrationViewModel: ObservableObject {
             let canvasX = marginX + scaledX
             let canvasY = marginY + flippedY
 
+            NSLog("🎯 refitToCanvas: \(updatedDisplays[i].name) physical (\(physicalPos.x), \(physicalPos.y)) → canvas (\(canvasX), \(canvasY))")
+
             updatedDisplays[i].scaledPosition = CGPoint(x: canvasX, y: canvasY)
             updatedDisplays[i].scaledSize = CGSize(width: scaledWidth, height: scaledHeight)
         }
@@ -638,6 +646,13 @@ class CalibrationViewModel: ObservableObject {
     }
 
     func saveCalibration() {
+        NSLog("💾 saveCalibration called")
+
+        // Log current physical positions before saving
+        for display in physicalDisplays {
+            NSLog("💾 Saving display: \(display.name) at physical (\(display.physicalPosition.x), \(display.physicalPosition.y))")
+        }
+
         // Physical positions are already up-to-date from updatePhysicalPositionsFromCanvas()
         let layouts = physicalDisplays.map { display in
             PhysicalDisplayLayout(
@@ -663,6 +678,8 @@ class CalibrationViewModel: ObservableObject {
         calibrationManager.saveCalibration(configuration)
         hasExistingCalibration = true
 
+        NSLog("💾 Configuration saved successfully")
+
         // Update saved configuration to new save point
         savedConfiguration = configuration
 
@@ -671,6 +688,8 @@ class CalibrationViewModel: ObservableObject {
 
         // Notify laser display to reload physical configuration
         NotificationCenter.default.post(name: .calibrationDidSave, object: nil)
+
+        NSLog("💾 Calibration save complete")
     }
 
     func restoreOriginal() {
@@ -805,6 +824,169 @@ class CalibrationViewModel: ObservableObject {
             name: .flashingDisplayNumberDidChange,
             object: nil as Int?
         )
+    }
+
+    /// Generate debug information and copy to clipboard
+    func copyDebugInfo() {
+        NSLog("🔍 copyDebugInfo() called")
+
+        // Capture state on main thread (quick snapshot)
+        let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+        let osVersion = ProcessInfo.processInfo.operatingSystemVersion
+        let screens = NSScreen.screens
+        let physicalDisplaysCopy = self.physicalDisplays
+        let edgeZonesCopy = self.edgeZones
+        let edgeZonePairsCopy = self.edgeZonePairs
+        let configKey = self.currentConfigKey
+        let savedConfig = calibrationManager.loadCalibration()
+
+        // Move heavy JSON generation to background thread
+        DispatchQueue.global(qos: .userInitiated).async {
+            NSLog("🔄 Starting debug info generation on background thread")
+
+            var debugInfo: [String: Any] = [:]
+
+            // App version
+            if let version = appVersion {
+                debugInfo["app_version"] = version
+            }
+
+            // macOS version
+            debugInfo["macos_version"] = "\(osVersion.majorVersion).\(osVersion.minorVersion).\(osVersion.patchVersion)"
+
+            // Screen information
+            var screensInfo: [[String: Any]] = []
+            for screen in screens {
+                var screenInfo: [String: Any] = [:]
+                screenInfo["frame"] = [
+                    "x": screen.frame.origin.x,
+                    "y": screen.frame.origin.y,
+                    "width": screen.frame.size.width,
+                    "height": screen.frame.size.height
+                ]
+                if let displayID = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID {
+                    screenInfo["display_id"] = displayID
+                }
+                screensInfo.append(screenInfo)
+            }
+            debugInfo["screens"] = screensInfo
+
+            // Physical displays
+            var physicalDisplaysInfo: [[String: Any]] = []
+            for display in physicalDisplaysCopy {
+                var displayInfo: [String: Any] = [:]
+                displayInfo["name"] = display.name
+                displayInfo["is_built_in"] = display.isBuiltIn
+                displayInfo["physical_position"] = ["x": display.physicalPosition.x, "y": display.physicalPosition.y]
+                displayInfo["physical_size"] = ["width": display.physicalSize.width, "height": display.physicalSize.height]
+                displayInfo["resolution"] = ["width": display.resolution.width, "height": display.resolution.height]
+                displayInfo["ppi"] = display.ppi
+                physicalDisplaysInfo.append(displayInfo)
+            }
+            debugInfo["physical_displays"] = physicalDisplaysInfo
+
+            // Edge zones
+            var edgeZonesInfo: [[String: Any]] = []
+            for zone in edgeZonesCopy {
+                var zoneInfo: [String: Any] = [:]
+                zoneInfo["id"] = zone.id.uuidString
+                zoneInfo["edge"] = "\(zone.edge)"
+                zoneInfo["display_id"] = zone.displayId
+                zoneInfo["range_start"] = zone.rangeStart
+                zoneInfo["range_end"] = zone.rangeEnd
+                edgeZonesInfo.append(zoneInfo)
+            }
+            debugInfo["edge_zones"] = edgeZonesInfo
+
+            // Edge zone pairs
+            var pairsInfo: [[String: Any]] = []
+            for pair in edgeZonePairsCopy {
+                var pairInfo: [String: Any] = [:]
+                pairInfo["source_zone_id"] = pair.sourceZoneId.uuidString
+                pairInfo["target_zone_id"] = pair.targetZoneId.uuidString
+                pairsInfo.append(pairInfo)
+            }
+            debugInfo["edge_zone_pairs"] = pairsInfo
+
+            // Settings
+            var settings: [String: Any] = [:]
+            settings["use_physical_layout"] = UserDefaults.standard.object(forKey: "UsePhysicalLayout") as? Bool ?? true
+            settings["show_edge_zones"] = UserDefaults.standard.object(forKey: "ShowEdgeZones") as? Bool ?? false
+            settings["smart_edge_navigation"] = UserDefaults.standard.object(forKey: "SmartEdgeNavigationEnabled") as? Bool ?? true
+            settings["guard_edge"] = UserDefaults.standard.object(forKey: "GuardEdgeEnabled") as? Bool ?? true
+            debugInfo["settings"] = settings
+
+            // Saved configuration (if exists)
+            if let config = savedConfig {
+                var savedConfigInfo: [String: Any] = [:]
+                savedConfigInfo["config_key"] = configKey ?? "unknown"
+                savedConfigInfo["timestamp"] = config.timestamp.description
+
+                // Saved displays
+                var savedDisplaysInfo: [[String: Any]] = []
+                for display in config.displays {
+                    var displayInfo: [String: Any] = [:]
+                    displayInfo["identifier"] = display.identifier.stringRepresentation
+                    displayInfo["position"] = ["x": display.position.x, "y": display.position.y]
+                    displayInfo["size"] = ["width": display.size.width, "height": display.size.height]
+                    savedDisplaysInfo.append(displayInfo)
+                }
+                savedConfigInfo["saved_displays"] = savedDisplaysInfo
+
+                // Saved edge zones
+                var savedEdgeZonesInfo: [[String: Any]] = []
+                for zone in config.edgeZones {
+                    var zoneInfo: [String: Any] = [:]
+                    zoneInfo["id"] = zone.id.uuidString
+                    zoneInfo["edge"] = "\(zone.edge)"
+                    zoneInfo["display_id"] = zone.displayId
+                    zoneInfo["range_start"] = zone.rangeStart
+                    zoneInfo["range_end"] = zone.rangeEnd
+                    savedEdgeZonesInfo.append(zoneInfo)
+                }
+                savedConfigInfo["saved_edge_zones"] = savedEdgeZonesInfo
+
+                // Saved edge zone pairs
+                var savedPairsInfo: [[String: Any]] = []
+                for pair in config.edgeZonePairs {
+                    var pairInfo: [String: Any] = [:]
+                    pairInfo["source_zone_id"] = pair.sourceZoneId.uuidString
+                    pairInfo["target_zone_id"] = pair.targetZoneId.uuidString
+                    savedPairsInfo.append(pairInfo)
+                }
+                savedConfigInfo["saved_edge_zone_pairs"] = savedPairsInfo
+
+                debugInfo["saved_configuration"] = savedConfigInfo
+            } else {
+                debugInfo["saved_configuration"] = nil
+            }
+
+            // Convert to JSON
+            NSLog("🔄 Converting to JSON... debugInfo keys: \(debugInfo.keys)")
+            do {
+                let jsonData = try JSONSerialization.data(withJSONObject: debugInfo, options: [.prettyPrinted, .sortedKeys])
+                NSLog("✅ JSON data created: \(jsonData.count) bytes")
+
+                if let jsonString = String(data: jsonData, encoding: .utf8) {
+                    NSLog("✅ JSON string created: \(jsonString.count) characters")
+
+                    // Copy to clipboard on main thread
+                    DispatchQueue.main.async {
+                        let pasteboard = NSPasteboard.general
+                        pasteboard.clearContents()
+                        let success = pasteboard.setString(jsonString, forType: .string)
+
+                        NSLog("📋 Pasteboard setString result: \(success)")
+                        NSLog("📋 Debug info copied to clipboard (\(jsonString.count) characters)")
+                    }
+                } else {
+                    NSLog("❌ Failed to convert JSON data to string")
+                }
+            } catch {
+                NSLog("❌ Failed to generate debug info: \(error)")
+                NSLog("❌ Error description: \(error.localizedDescription)")
+            }
+        }
     }
 }
 
