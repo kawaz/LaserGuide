@@ -531,8 +531,8 @@ class CalibrationViewModel: ObservableObject {
 
         physicalDisplays[index] = display
 
-        // Refit to canvas if any display is outside
-        refitToCanvas()
+        // Always refit to canvas after drag to ensure proper scaling and centering
+        refitToCanvas(force: true)
 
         // Notify laser display for real-time preview
         notifyCalibrationChange()
