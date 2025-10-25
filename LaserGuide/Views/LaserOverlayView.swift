@@ -14,6 +14,9 @@ struct LaserOverlayView: View {
 
                 // Monitor identification overlay
                 if viewModel.showIdentification, let number = viewModel.displayNumber {
+                    // Calculate font size based on screen size (same logic as calibration canvas)
+                    let fontSize = min(geometry.size.width, geometry.size.height) * 0.6
+
                     ZStack {
                         // Border glow
                         Rectangle()
@@ -21,7 +24,7 @@ struct LaserOverlayView: View {
 
                         // Center number
                         Text("\(number)")
-                            .font(.system(size: 200, weight: .bold, design: .rounded))
+                            .font(.system(size: fontSize, weight: .bold, design: .rounded))
                             .foregroundColor(.white.opacity(0.8))
                             .shadow(color: .black.opacity(0.5), radius: 10, x: 0, y: 0)
                     }

@@ -840,8 +840,12 @@ class CalibrationViewModel: ObservableObject {
         )
     }
 
-    /// Stop continuous flash
+    /// Stop continuous flash and cancel any pending timers
     func stopContinuousFlash() {
+        // Cancel any pending auto-hide timer
+        flashTimer?.cancel()
+        flashTimer = nil
+
         flashingDisplayNumber = nil
         // Notify with nil to hide all flashes
         NotificationCenter.default.post(

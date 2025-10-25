@@ -501,12 +501,12 @@ struct PhysicalDisplayRect: View {
                 .onChanged { value in
                     if !isDragging {
                         isDragging = true
-                        viewModel.startContinuousFlash(displayNumber: displayNumber)
+                        // Stop any existing flash immediately when drag starts
+                        viewModel.stopContinuousFlash()
                     }
                 }
                 .onEnded { value in
                     isDragging = false
-                    viewModel.stopContinuousFlash()
 
                     // Clear drag offset
                     viewModel.dragOffsets[display.id] = .zero
