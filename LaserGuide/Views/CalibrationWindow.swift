@@ -442,7 +442,6 @@ struct PhysicalDisplayRect: View {
 
             // Edge zones for this display
             let displayZones = viewModel.displayedEdgeZones.filter { $0.displayId == display.identifier.stringRepresentation }
-            let isDraggingDisplay = viewModel.dragOffsets.values.contains(where: { $0 != .zero })
 
             // Draw block zones (border color lines for non-navigable areas)
             ForEach([EdgeDirection.top, .bottom, .left, .right], id: \.self) { edge in
@@ -764,7 +763,6 @@ struct EdgeZoneInset: View {
         let thickness: CGFloat = 2  // Match border thickness
         let zoneRect = calculateZoneRect(edge: zone.edge, rangeStart: zone.rangeStart, rangeEnd: zone.rangeEnd, displaySize: displaySize, inset: inset, thickness: thickness)
         let isSelected = viewModel.selectedEdgeZoneIds.contains(zone.id)
-        let isDraggingDisplay = viewModel.dragOffsets.values.contains(where: { $0 != .zero })
 
         return ZStack(alignment: .topLeading) {
             // Edge zone line (visible, opaque to be visible on any background color)
@@ -1026,9 +1024,6 @@ class EdgeZoneHandleNSView: NSView {
         if let index = viewModel.edgeZones.firstIndex(where: { $0.id == zone.id }) {
             var updatedZone = viewModel.edgeZones[index]
 
-            // Special handling when start == end (handles are overlapping)
-            let wasOverlapping = abs(updatedZone.rangeStart - updatedZone.rangeEnd) < 0.001
-
             // Find other zones on the same display and edge
             let otherZones = viewModel.edgeZones.filter {
                 $0.id != zone.id &&
@@ -1255,9 +1250,6 @@ struct SimpleEdgeZoneHandle: View {
 
         if let index = viewModel.edgeZones.firstIndex(where: { $0.id == zone.id }) {
             var updatedZone = viewModel.edgeZones[index]
-
-            // Special handling when start == end (handles are overlapping)
-            let wasOverlapping = abs(updatedZone.rangeStart - updatedZone.rangeEnd) < 0.001
 
             // Find other zones on the same display and edge
             let otherZones = viewModel.edgeZones.filter {
