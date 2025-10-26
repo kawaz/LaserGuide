@@ -936,8 +936,8 @@ class CalibrationViewModel: ObservableObject {
             var pairsInfo: [[String: Any]] = []
             for pair in edgeZonePairsCopy {
                 var pairInfo: [String: Any] = [:]
-                pairInfo["source_zone_id"] = pair.sourceZoneId.uuidString
-                pairInfo["target_zone_id"] = pair.targetZoneId.uuidString
+                pairInfo["zone1_id"] = pair.zone1Id.uuidString
+                pairInfo["zone2_id"] = pair.zone2Id.uuidString
                 pairsInfo.append(pairInfo)
             }
             debugInfo["edge_zone_pairs"] = pairsInfo
@@ -984,8 +984,8 @@ class CalibrationViewModel: ObservableObject {
                 var savedPairsInfo: [[String: Any]] = []
                 for pair in config.edgeZonePairs {
                     var pairInfo: [String: Any] = [:]
-                    pairInfo["source_zone_id"] = pair.sourceZoneId.uuidString
-                    pairInfo["target_zone_id"] = pair.targetZoneId.uuidString
+                    pairInfo["zone1_id"] = pair.zone1Id.uuidString
+                    pairInfo["zone2_id"] = pair.zone2Id.uuidString
                     savedPairsInfo.append(pairInfo)
                 }
                 savedConfigInfo["saved_edge_zone_pairs"] = savedPairsInfo

@@ -350,9 +350,9 @@ struct LogicalDisplayRect: View {
 
                 // Find paired zones via edge zone pairs
                 for pair in viewModel.edgeZonePairs {
-                    if pair.sourceZoneId == zone.id, let targetZone = viewModel.edgeZones.first(where: { $0.id == pair.targetZoneId }) {
+                    if pair.zone1Id == zone.id, let targetZone = viewModel.edgeZones.first(where: { $0.id == pair.zone2Id }) {
                         zonesToSelect.insert(targetZone.id)
-                    } else if pair.targetZoneId == zone.id, let sourceZone = viewModel.edgeZones.first(where: { $0.id == pair.sourceZoneId }) {
+                    } else if pair.zone2Id == zone.id, let sourceZone = viewModel.edgeZones.first(where: { $0.id == pair.zone1Id }) {
                         zonesToSelect.insert(sourceZone.id)
                     }
                 }
@@ -577,13 +577,13 @@ struct EdgeZoneOverlay: View {
         return ZStack {
             // Draw connection lines between paired zones
             ForEach(edgeZonePairs) { pair in
-                if let sourceZone = edgeZones.first(where: { $0.id == pair.sourceZoneId }),
-                   let targetZone = edgeZones.first(where: { $0.id == pair.targetZoneId }) {
+                if let zone1 = edgeZones.first(where: { $0.id == pair.zone1Id }),
+                   let zone2 = edgeZones.first(where: { $0.id == pair.zone2Id }) {
                     EdgeZonePairLine(
-                        sourceZone: sourceZone,
-                        targetZone: targetZone,
-                        sourceDisplay: displayFor(zone: sourceZone),
-                        targetDisplay: displayFor(zone: targetZone),
+                        sourceZone: zone1,
+                        targetZone: zone2,
+                        sourceDisplay: displayFor(zone: zone1),
+                        targetDisplay: displayFor(zone: zone2),
                         viewModel: viewModel
                     )
                 }

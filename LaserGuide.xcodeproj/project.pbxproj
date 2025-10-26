@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXFileReference section */
+		E7801DF5E10C41B69304419C /* EdgeNavigationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EdgeNavigationManager.swift; sourceTree = "<group>"; };
+		796C182C54D8481889A915AA /* EdgeNavigationStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EdgeNavigationStatus.swift; sourceTree = "<group>"; };
+		C1C02EA296394FE0A1B16EF5 /* EventViewerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventViewerView.swift; sourceTree = "<group>"; };
+		AF7513267B6A4CC48775823B /* EdgeNavigationCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EdgeNavigationCache.swift; sourceTree = "<group>"; };
 		C39C856B2DAF58D0006D232D /* LaserGuide.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LaserGuide.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -119,6 +123,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E0B199FFCDB04DD49311352A /* EdgeNavigationManager.swift in Sources */,
+				0DFD03304C76443FAEBBC7E3 /* EdgeNavigationStatus.swift in Sources */,
+				6A209307E99346DBA44200F1 /* EventViewerView.swift in Sources */,
+				CF5ACA11FF824C53908A74B7 /* EdgeNavigationCache.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

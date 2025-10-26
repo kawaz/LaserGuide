@@ -62,15 +62,16 @@ struct EdgeZone: Codable, Identifiable, Hashable {
 }
 
 /// Pair of edge zones that allow mouse crossing
+/// Note: zone1/zone2 are direction-neutral. zone1.displayId < zone2.displayId for normalization.
 struct EdgeZonePair: Codable, Identifiable, Hashable {
     let id: UUID
-    let sourceZoneId: UUID
-    let targetZoneId: UUID
+    let zone1Id: UUID  // DisplayIdentifier順で小さい方
+    let zone2Id: UUID  // DisplayIdentifier順で大きい方
 
-    init(id: UUID = UUID(), sourceZoneId: UUID, targetZoneId: UUID) {
+    init(id: UUID = UUID(), zone1Id: UUID, zone2Id: UUID) {
         self.id = id
-        self.sourceZoneId = sourceZoneId
-        self.targetZoneId = targetZoneId
+        self.zone1Id = zone1Id
+        self.zone2Id = zone2Id
     }
 }
 

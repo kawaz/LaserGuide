@@ -174,8 +174,13 @@ class CalibrationDataManager {
                     zones.append(zone1)
                     zones.append(zone2)
 
-                    // Create pair
-                    let pair = EdgeZonePair(sourceZoneId: zone1.id, targetZoneId: zone2.id)
+                    // Create pair (normalized: zone1.displayId < zone2.displayId)
+                    let pair: EdgeZonePair
+                    if zone1.displayId < zone2.displayId {
+                        pair = EdgeZonePair(zone1Id: zone1.id, zone2Id: zone2.id)
+                    } else {
+                        pair = EdgeZonePair(zone1Id: zone2.id, zone2Id: zone1.id)
+                    }
                     pairs.append(pair)
 
                     NSLog("📐 Auto-generated edge pair: \(displayId).\(edge) ↔ \(zone2.displayId).\(adjacency.edge)")
@@ -293,7 +298,7 @@ class CalibrationDataManager {
         var unique: [EdgeZonePair] = []
 
         for pair in pairs {
-            let pairSet: Set<UUID> = [pair.sourceZoneId, pair.targetZoneId]
+            let pairSet: Set<UUID> = [pair.zone1Id, pair.zone2Id]
             if !seen.contains(pairSet) {
                 seen.insert(pairSet)
                 unique.append(pair)

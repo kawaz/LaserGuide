@@ -6,10 +6,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var screenManager = ScreenManager.shared
     private var calibrationWindow: NSWindow?
     private var aboutWindow: NSWindow?
+    private var eventViewerWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // 多重起動の防止
-        if isAnotherInstanceRunning() {
+        // 多重起動の防止（ただしRelaunchフラグがある場合はスキップ）
+        let isRelaunch = UserDefaults.standard.bool(forKey: "IsRelaunching")
+        if isRelaunch {
+            // Relaunchフラグをクリア
+            UserDefaults.standard.removeObject(forKey: "IsRelaunching")
+            NSLog("LaserGuide: Relaunch detected, skipping duplicate check")
+        } else if isAnotherInstanceRunning() {
             NSLog("LaserGuide: Another instance is already running. Terminating.")
             NSApp.terminate(nil)
             return
@@ -17,10 +23,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         setupStatusBar()
         screenManager.setupOverlays()
-        
+
         // グローバルマウス追跡を開始
         MouseTrackingManager.shared.startTracking()
-        
+
+        // Smart Edge Navigation を初期化
+        EdgeNavigationManager.shared.startIfNeeded()
+
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(screensDidChange),
@@ -86,7 +95,30 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         usePhysicalLayoutItem.state = isEnabled ? .on : .off
         menu.addItem(usePhysicalLayoutItem)
 
+        // Smart Edge Navigation 設定項目
+        let smartEdgeItem = NSMenuItem(
+            title: "Smart Edge Navigation",
+            action: #selector(toggleSmartEdge),
+            keyEquivalent: ""
+        )
+        smartEdgeItem.target = self
+        smartEdgeItem.state = EdgeNavigationManager.shared.isSmartEdgeEnabled ? .on : .off
+        menu.addItem(smartEdgeItem)
+
+        // Event Viewer 項目
+        let eventViewerItem = NSMenuItem(
+            title: "Launch Event Viewer...",
+            action: #selector(openEventViewer),
+            keyEquivalent: ""
+        )
+        eventViewerItem.target = self
+        menu.addItem(eventViewerItem)
+
         menu.addItem(NSMenuItem.separator())
+
+        let relaunchItem = NSMenuItem(title: "Relaunch", action: #selector(relaunchApp), keyEquivalent: "r")
+        relaunchItem.target = self
+        menu.addItem(relaunchItem)
 
         let quitItem = NSMenuItem(title: "Quit", action: #selector(quitApp), keyEquivalent: "q")
         quitItem.target = self
@@ -150,6 +182,35 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         calibrationWindow = window
     }
 
+    @objc private func openEventViewer() {
+        // Close existing window if any
+        eventViewerWindow?.close()
+        eventViewerWindow = nil
+
+        // Create new event viewer window
+        let contentView = EventViewerView()
+        let hostingController = NSHostingController(rootView: contentView)
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 1200, height: 900),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Edge Navigation Event Viewer"
+        window.contentViewController = hostingController
+        window.minSize = NSSize(width: 800, height: 600)
+        window.setContentSize(NSSize(width: 1200, height: 900))
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        window.isReleasedWhenClosed = false
+
+        // Activate the app to bring window to front
+        NSApp.activate(ignoringOtherApps: true)
+
+        eventViewerWindow = window
+    }
+
     @objc private func toggleAutoLaunch(_ sender: NSMenuItem) {
         let newState = AutoLaunchManager.shared.toggle()
         sender.state = newState ? .on : .off
@@ -168,13 +229,52 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSLog("🔧 Use Physical Layout toggled: \(newState ? "ON" : "OFF")")
     }
 
+    @objc private func toggleSmartEdge(_ sender: NSMenuItem) {
+        let newState = sender.state == .off
+        sender.state = newState ? .on : .off
+
+        EdgeNavigationManager.shared.setSmartEdge(enabled: newState)
+
+        NSLog("🧭 Smart Edge Navigation toggled: \(newState ? "ON" : "OFF")")
+
+        // Check Accessibility permissions if enabling for the first time
+        if newState && !EdgeNavigationManager.shared.checkAccessibilityPermissions() {
+            EdgeNavigationManager.shared.requestAccessibilityPermissions()
+        }
+    }
+
     @objc private func screensDidChange() {
         screenManager.setupOverlays()
+    }
+
+    @objc private func relaunchApp() {
+        let bundlePath = Bundle.main.bundlePath
+
+        // Set relaunch flag so new instance can skip duplicate check
+        UserDefaults.standard.set(true, forKey: "IsRelaunching")
+        UserDefaults.standard.synchronize()
+
+        // Launch new instance with -n flag to force new instance
+        let task = Process()
+        task.launchPath = "/usr/bin/open"
+        task.arguments = ["-n", bundlePath]
+
+        do {
+            try task.run()
+            NSLog("🔄 Relaunching LaserGuide...")
+            self.quitApp()
+        } catch {
+            NSLog("⚠️ Failed to relaunch: \(error)")
+            // Clear flag if launch failed
+            UserDefaults.standard.removeObject(forKey: "IsRelaunching")
+        }
     }
 
     @objc private func quitApp() {
         // アプリ終了時にマウス追跡を停止
         MouseTrackingManager.shared.stopTracking()
+        // Smart Edge Navigation を停止
+        EdgeNavigationManager.shared.stop()
         NSApplication.shared.terminate(nil)
     }
 
